@@ -17,9 +17,12 @@ export type Database = {
       tariffs: {
         Row: {
           carrier: string
+          commodity: string | null
           created_at: string
           ens_ams: string | null
           free_time: string | null
+          free_time_destination: string | null
+          free_time_origin: string | null
           id: string
           pod: string
           pol: string
@@ -33,9 +36,12 @@ export type Database = {
         }
         Insert: {
           carrier: string
+          commodity?: string | null
           created_at?: string
           ens_ams?: string | null
           free_time?: string | null
+          free_time_destination?: string | null
+          free_time_origin?: string | null
           id?: string
           pod: string
           pol: string
@@ -49,9 +55,12 @@ export type Database = {
         }
         Update: {
           carrier?: string
+          commodity?: string | null
           created_at?: string
           ens_ams?: string | null
           free_time?: string | null
+          free_time_destination?: string | null
+          free_time_origin?: string | null
           id?: string
           pod?: string
           pol?: string
