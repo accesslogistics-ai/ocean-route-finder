@@ -39,22 +39,35 @@ interface ParsedTariff {
   subject_to: string | null;
 }
 
-// Column mapping: Excel column name -> database field
-const COLUMN_MAP: Record<string, keyof ParsedTariff> = {
-  "Origem": "pol",
-  "Destino": "pod",
-  "Armador": "carrier",
-  "Commodity": "commodity",
-  "20 DRY": "price_20dc",
-  "40 HIGH CUBE": "price_40hc",
-  "40 REEFER": "price_40reefer",
-  "Free Time origem": "free_time_origin",
-  "Free Time destino": "free_time_destination",
-  "Transit Time": "transit_time",
-  "ENS": "ens_ams",
-  "Validade": "validity",
-  "Obs": "subject_to",
+// Normalize header for flexible matching
+function normalizeHeader(header: string): string {
+  return String(header)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+    .replace(/\s+/g, " "); // Normalize spaces
+}
+
+// Column mapping: normalized Excel column name -> database field
+const COLUMN_MAP_NORMALIZED: Record<string, keyof ParsedTariff> = {
+  "origem": "pol",
+  "destino": "pod",
+  "armador": "carrier",
+  "commodity": "commodity",
+  "20 dry": "price_20dc",
+  "40 high cube": "price_40hc",
+  "40 reefer": "price_40reefer",
+  "free time origem": "free_time_origin",
+  "free time destino": "free_time_destination",
+  "transit time": "transit_time",
+  "ens": "ens_ams",
+  "validade": "validity",
+  "obs": "subject_to",
 };
+
+// Required normalized headers for finding header row
+const REQUIRED_HEADERS = ["origem", "destino", "armador"];
 
 function parseNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
@@ -65,6 +78,24 @@ function parseNumber(value: unknown): number | null {
 function parseString(value: unknown): string | null {
   if (value === null || value === undefined || value === "") return null;
   return String(value).trim();
+}
+
+// Find the header row by looking for required columns
+function findHeaderRowIndex(data: unknown[][]): number {
+  for (let i = 0; i < Math.min(data.length, 10); i++) {
+    const row = data[i];
+    if (!row || !Array.isArray(row)) continue;
+    
+    const normalizedRow = row.map((cell) => normalizeHeader(String(cell || "")));
+    const hasAllRequired = REQUIRED_HEADERS.every((req) =>
+      normalizedRow.some((cell) => cell.includes(req))
+    );
+    
+    if (hasAllRequired) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 export function ImportTariffs() {
@@ -104,12 +135,28 @@ export function ImportTariffs() {
         throw new Error("Arquivo vazio ou sem dados");
       }
 
-      const headers = jsonData[0] as string[];
+      // Find header row automatically
+      const headerRowIndex = findHeaderRowIndex(jsonData);
+      if (headerRowIndex === -1) {
+        throw new Error("Colunas obrigatórias não encontradas: Origem, Destino, Armador");
+      }
+
+      const headers = jsonData[headerRowIndex] as string[];
       const columnIndices: Partial<Record<keyof ParsedTariff, number>> = {};
 
       headers.forEach((header, index) => {
-        const cleanHeader = String(header).trim();
-        const mappedField = COLUMN_MAP[cleanHeader];
+        const normalizedHeader = normalizeHeader(String(header || ""));
+        // Check exact match first, then partial match
+        let mappedField = COLUMN_MAP_NORMALIZED[normalizedHeader];
+        if (!mappedField) {
+          // Try partial matching for flexibility
+          for (const [key, field] of Object.entries(COLUMN_MAP_NORMALIZED)) {
+            if (normalizedHeader.includes(key) || key.includes(normalizedHeader)) {
+              mappedField = field;
+              break;
+            }
+          }
+        }
         if (mappedField) {
           columnIndices[mappedField] = index;
         }
@@ -121,7 +168,7 @@ export function ImportTariffs() {
       }
 
       const parsed: ParsedTariff[] = [];
-      for (let i = 1; i < jsonData.length; i++) {
+      for (let i = headerRowIndex + 1; i < jsonData.length; i++) {
         const row = jsonData[i] as unknown[];
         if (!row || row.length === 0) continue;
 
