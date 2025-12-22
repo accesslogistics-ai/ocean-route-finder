@@ -27,9 +27,14 @@ export interface TariffFilters {
   pod?: string;
 }
 
-export function useTariffs(filters: TariffFilters = {}) {
+export interface UseTariffsOptions {
+  enabled?: boolean;
+  limit?: number;
+}
+
+export function useTariffs(filters: TariffFilters = {}, options: UseTariffsOptions = {}) {
   return useQuery({
-    queryKey: ["tariffs", filters],
+    queryKey: ["tariffs", filters, options.limit ?? null],
     queryFn: async () => {
       let query = supabase.from("tariffs").select("*");
 
@@ -43,11 +48,16 @@ export function useTariffs(filters: TariffFilters = {}) {
         query = query.eq("pod", filters.pod);
       }
 
+      if (options.limit && options.limit > 0) {
+        query = query.range(0, options.limit - 1);
+      }
+
       const { data, error } = await query.order("carrier");
 
       if (error) throw error;
       return data as Tariff[];
     },
+    enabled: options.enabled ?? true,
   });
 }
 

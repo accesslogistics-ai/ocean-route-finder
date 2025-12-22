@@ -68,6 +68,8 @@ const COLUMN_MAP_NORMALIZED: Record<string, keyof ParsedTariff> = {
 
 // Required normalized headers for finding header row
 const REQUIRED_HEADERS = ["origem", "destino", "armador"];
+const HEADER_SCAN_MAX_ROWS = 50;
+const HEADER_LIST_MAX_COLS = 30;
 
 function parseNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
@@ -80,9 +82,15 @@ function parseString(value: unknown): string | null {
   return String(value).trim();
 }
 
+function formatHeaderList(headers: unknown[], maxCols = HEADER_LIST_MAX_COLS): string {
+  const shown = headers.slice(0, maxCols).map((h) => String(h ?? "").trim()).filter(Boolean);
+  const suffix = headers.length > maxCols ? ` …(+${headers.length - maxCols})` : "";
+  return shown.length ? `${shown.join(" | ")}${suffix}` : "(vazio)";
+}
+
 // Find the header row by looking for required columns
 function findHeaderRowIndex(data: unknown[][]): number {
-  for (let i = 0; i < Math.min(data.length, 10); i++) {
+  for (let i = 0; i < Math.min(data.length, HEADER_SCAN_MAX_ROWS); i++) {
     const row = data[i];
     if (!row || !Array.isArray(row)) continue;
     
@@ -138,7 +146,11 @@ export function ImportTariffs() {
       // Find header row automatically
       const headerRowIndex = findHeaderRowIndex(jsonData);
       if (headerRowIndex === -1) {
-        throw new Error("Colunas obrigatórias não encontradas: Origem, Destino, Armador");
+        const preview = jsonData[0] ? formatHeaderList(jsonData[0]) : "(sem linhas)";
+        throw new Error(
+          `Colunas obrigatórias não encontradas: Origem, Destino, Armador. ` +
+          `Cabeçalhos na 1ª linha: ${preview}`
+        );
       }
 
       const headers = jsonData[headerRowIndex] as string[];
@@ -163,8 +175,17 @@ export function ImportTariffs() {
       });
 
       // Validate required columns
-      if (!columnIndices.pol || !columnIndices.pod || !columnIndices.carrier) {
-        throw new Error("Colunas obrigatórias não encontradas: Origem, Destino, Armador");
+      const missingRequired: string[] = [];
+      if (columnIndices.pol === undefined) missingRequired.push("Origem");
+      if (columnIndices.pod === undefined) missingRequired.push("Destino");
+      if (columnIndices.carrier === undefined) missingRequired.push("Armador");
+
+      if (missingRequired.length > 0) {
+        throw new Error(
+          `Colunas obrigatórias não encontradas: ${missingRequired.join(", ")}. ` +
+          `Linha de cabeçalho detectada: ${headerRowIndex + 1}. ` +
+          `Cabeçalhos: ${formatHeaderList(headers)}`
+        );
       }
 
       const parsed: ParsedTariff[] = [];

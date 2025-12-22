@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tariff } from "@/hooks/useTariffs";
-import { Package, Clock, Calendar, AlertTriangle } from "lucide-react";
+import { Package, Clock, Calendar, AlertTriangle, Search } from "lucide-react";
 
 interface TariffTableProps {
   tariffs: Tariff[];
   selectedTariffs: string[];
   onSelectionChange: (ids: string[]) => void;
   isLoading?: boolean;
+  hasSearched?: boolean;
 }
 
 function formatPrice(price: number | null): string {
@@ -17,7 +18,7 @@ function formatPrice(price: number | null): string {
   return `USD ${price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 }
 
-export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoading }: TariffTableProps) {
+export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoading, hasSearched }: TariffTableProps) {
   const toggleSelection = (id: string) => {
     if (selectedTariffs.includes(id)) {
       onSelectionChange(selectedTariffs.filter((s) => s !== id));
@@ -41,6 +42,20 @@ export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoa
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <span className="ml-3 text-muted-foreground">Carregando tarifas...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!hasSearched) {
+    return (
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center text-muted-foreground">
+            <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium">Pronto para buscar</p>
+            <p className="text-sm">Selecione os filtros e clique em Buscar para ver até 50 resultados</p>
           </div>
         </CardContent>
       </Card>

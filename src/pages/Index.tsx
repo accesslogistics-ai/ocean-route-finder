@@ -15,8 +15,9 @@ const Index = () => {
   const [pod, setPod] = useState("");
   const [appliedFilters, setAppliedFilters] = useState<TariffFiltersType>({});
   const [selectedTariffs, setSelectedTariffs] = useState<string[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const { data: tariffs = [], isLoading } = useTariffs(appliedFilters);
+  const { data: tariffs = [], isLoading } = useTariffs(appliedFilters, { enabled: hasSearched, limit: 50 });
   const { data: comparisonTariffs = [], isLoading: loadingComparison } = useRouteComparison(
     appliedFilters.pol || "",
     appliedFilters.pod || ""
@@ -29,6 +30,7 @@ const Index = () => {
       pod: pod || undefined,
     });
     setSelectedTariffs([]);
+    setHasSearched(true);
   };
 
   const handleReset = () => {
@@ -37,6 +39,7 @@ const Index = () => {
     setPod("");
     setAppliedFilters({});
     setSelectedTariffs([]);
+    setHasSearched(false);
   };
 
   const handleCarrierChange = (value: string) => {
@@ -90,6 +93,7 @@ const Index = () => {
               selectedTariffs={selectedTariffs}
               onSelectionChange={setSelectedTariffs}
               isLoading={isLoading}
+              hasSearched={hasSearched}
             />
           </TabsContent>
 
