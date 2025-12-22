@@ -6,10 +6,13 @@ export interface Tariff {
   carrier: string;
   pol: string;
   pod: string;
+  commodity: string | null;
   price_20dc: number | null;
   price_40hc: number | null;
   price_40reefer: number | null;
   free_time: string | null;
+  free_time_origin: string | null;
+  free_time_destination: string | null;
   transit_time: string | null;
   ens_ams: string | null;
   subject_to: string | null;
