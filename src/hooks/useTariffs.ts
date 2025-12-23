@@ -65,6 +65,7 @@ export function useCarriers() {
   return useQuery({
     queryKey: ["carriers"],
     queryFn: async () => {
+      console.log("Buscando carriers com limit 10000...");
       const { data, error } = await supabase
         .from("tariffs")
         .select("carrier")
@@ -72,7 +73,9 @@ export function useCarriers() {
         .order("carrier");
 
       if (error) throw error;
+      console.log("Carriers encontrados:", data.length);
       const unique = [...new Set(data.map((d) => d.carrier))];
+      console.log("Carriers únicos:", unique);
       return unique;
     },
   });
