@@ -65,18 +65,9 @@ export function useCarriers() {
   return useQuery({
     queryKey: ["carriers"],
     queryFn: async () => {
-      console.log("Buscando carriers com limit 10000...");
-      const { data, error } = await supabase
-        .from("tariffs")
-        .select("carrier")
-        .limit(10000)
-        .order("carrier");
-
+      const { data, error } = await supabase.rpc("get_unique_carriers");
       if (error) throw error;
-      console.log("Carriers encontrados:", data.length);
-      const unique = [...new Set(data.map((d) => d.carrier))];
-      console.log("Carriers únicos:", unique);
-      return unique;
+      return (data as { carrier: string }[]).map((d) => d.carrier);
     },
   });
 }
@@ -85,19 +76,12 @@ export function usePols(carrier?: string) {
   return useQuery({
     queryKey: ["pols", carrier],
     queryFn: async () => {
-      let query = supabase.from("tariffs").select("pol");
-
-      if (carrier) {
-        query = query.eq("carrier", carrier);
-      }
-
-      const { data, error } = await query.limit(10000).order("pol");
-
+      const { data, error } = await supabase.rpc("get_unique_pols", {
+        p_carrier: carrier || null,
+      });
       if (error) throw error;
-      const unique = [...new Set(data.map((d) => d.pol))];
-      return unique;
+      return (data as { pol: string }[]).map((d) => d.pol);
     },
-    enabled: true,
   });
 }
 
@@ -105,22 +89,13 @@ export function usePods(carrier?: string, pol?: string) {
   return useQuery({
     queryKey: ["pods", carrier, pol],
     queryFn: async () => {
-      let query = supabase.from("tariffs").select("pod");
-
-      if (carrier) {
-        query = query.eq("carrier", carrier);
-      }
-      if (pol) {
-        query = query.eq("pol", pol);
-      }
-
-      const { data, error } = await query.limit(10000).order("pod");
-
+      const { data, error } = await supabase.rpc("get_unique_pods", {
+        p_carrier: carrier || null,
+        p_pol: pol || null,
+      });
       if (error) throw error;
-      const unique = [...new Set(data.map((d) => d.pod))];
-      return unique;
+      return (data as { pod: string }[]).map((d) => d.pod);
     },
-    enabled: true,
   });
 }
 
