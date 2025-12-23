@@ -1,7 +1,20 @@
-import { Anchor, Waves } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Anchor, Waves, LogOut, Settings, User } from "lucide-react";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { ImportTariffs } from "./ImportTariffs";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 export function Header() {
+  const { user, isAdmin, signOut } = useAuthContext();
+
   return (
     <header className="bg-card border-b">
       <div className="container mx-auto px-4 py-6">
@@ -20,7 +33,54 @@ export function Header() {
               </p>
             </div>
           </div>
-          <ImportTariffs />
+
+          <div className="flex items-center gap-3">
+            {/* Only show import button for admins */}
+            {isAdmin && <ImportTariffs />}
+
+            {/* User menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline max-w-[150px] truncate">
+                    {user?.email}
+                  </span>
+                  {isAdmin && (
+                    <Badge variant="secondary" className="ml-1">
+                      Admin
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-2 py-1.5 text-sm font-medium">
+                  {user?.email}
+                </div>
+                <DropdownMenuSeparator />
+                
+                {isAdmin && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="cursor-pointer">
+                        <Settings className="mr-2 h-4 w-4" />
+                        Gerenciar Usuários
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                  onClick={signOut}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </header>
