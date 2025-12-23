@@ -79,7 +79,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_unique_carriers: {
+        Args: never
+        Returns: {
+          carrier: string
+        }[]
+      }
+      get_unique_pods: {
+        Args: { p_carrier?: string; p_pol?: string }
+        Returns: {
+          pod: string
+        }[]
+      }
+      get_unique_pols: {
+        Args: { p_carrier?: string }
+        Returns: {
+          pol: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
