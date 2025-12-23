@@ -68,6 +68,7 @@ export function useCarriers() {
       const { data, error } = await supabase
         .from("tariffs")
         .select("carrier")
+        .limit(10000)
         .order("carrier");
 
       if (error) throw error;
@@ -87,7 +88,7 @@ export function usePols(carrier?: string) {
         query = query.eq("carrier", carrier);
       }
 
-      const { data, error } = await query.order("pol");
+      const { data, error } = await query.limit(10000).order("pol");
 
       if (error) throw error;
       const unique = [...new Set(data.map((d) => d.pol))];
@@ -110,7 +111,7 @@ export function usePods(carrier?: string, pol?: string) {
         query = query.eq("pol", pol);
       }
 
-      const { data, error } = await query.order("pod");
+      const { data, error } = await query.limit(10000).order("pod");
 
       if (error) throw error;
       const unique = [...new Set(data.map((d) => d.pod))];
