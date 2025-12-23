@@ -35,6 +35,16 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Admin management button - visible only to admins */}
+            {isAdmin && (
+              <Button variant="outline" asChild>
+                <Link to="/admin" className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden sm:inline">Gerenciar Usuários</span>
+                </Link>
+              </Button>
+            )}
+            
             {/* Only show import button for admins */}
             {isAdmin && <ImportTariffs />}
 
