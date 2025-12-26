@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2 } from "lucide-react";
+import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2, Globe } from "lucide-react";
+import { useCountries } from "@/hooks/useCountries";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -51,6 +52,7 @@ const createUserSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").max(100, "Senha muito longa"),
   fullName: z.string().trim().max(100, "Nome muito longo").optional(),
   role: z.enum(["admin", "user"]),
+  country: z.string().optional(),
 });
 
 interface UserWithRole {
@@ -58,6 +60,7 @@ interface UserWithRole {
   email: string;
   full_name: string | null;
   role: "admin" | "user";
+  country: string | null;
   created_at: string;
 }
 
@@ -67,9 +70,11 @@ export default function Admin() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<"admin" | "user">("user");
+  const [country, setCountry] = useState<string>("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: countries = [] } = useCountries();
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -97,6 +102,7 @@ export default function Admin() {
           email: profile.email,
           full_name: profile.full_name,
           role: (userRole?.role || "user") as "admin" | "user",
+          country: profile.country,
           created_at: profile.created_at,
         };
       }) as UserWithRole[];
@@ -111,6 +117,7 @@ export default function Admin() {
           password: data.password,
           fullName: data.fullName || null,
           role: data.role,
+          country: data.country || null,
         },
       });
 
@@ -179,6 +186,7 @@ export default function Admin() {
     setPassword("");
     setFullName("");
     setRole("user");
+    setCountry("");
     setErrors({});
   };
 
@@ -186,7 +194,19 @@ export default function Admin() {
     e.preventDefault();
     setErrors({});
 
-    const result = createUserSchema.safeParse({ email, password, fullName, role });
+    // Se for usuário comum, país é obrigatório
+    if (role === "user" && !country) {
+      setErrors({ country: "País é obrigatório para usuários" });
+      return;
+    }
+
+    const result = createUserSchema.safeParse({ 
+      email, 
+      password, 
+      fullName, 
+      role,
+      country: role === "user" ? country : undefined,
+    });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       result.error.errors.forEach((err) => {
@@ -282,7 +302,10 @@ export default function Admin() {
 
                   <div className="space-y-2">
                     <Label htmlFor="new-role">Tipo de Usuário *</Label>
-                    <Select value={role} onValueChange={(v) => setRole(v as "admin" | "user")}>
+                    <Select value={role} onValueChange={(v) => {
+                      setRole(v as "admin" | "user");
+                      if (v === "admin") setCountry("");
+                    }}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -302,6 +325,33 @@ export default function Admin() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {role === "user" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="new-country">País *</Label>
+                      <Select value={country} onValueChange={setCountry}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o país" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countries.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              <div className="flex items-center gap-2">
+                                <Globe className="h-4 w-4" />
+                                {c}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.country && (
+                        <p className="text-sm text-destructive">{errors.country}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        O usuário só terá acesso às tarifas com destino aos portos deste país.
+                      </p>
+                    </div>
+                  )}
 
                   <DialogFooter>
                     <Button
@@ -346,6 +396,7 @@ export default function Admin() {
                       <TableHead>Email</TableHead>
                       <TableHead>Nome</TableHead>
                       <TableHead>Tipo</TableHead>
+                      <TableHead>País</TableHead>
                       <TableHead>Criado em</TableHead>
                       <TableHead className="w-[100px]">Ações</TableHead>
                     </TableRow>
@@ -363,6 +414,16 @@ export default function Admin() {
                               <><UserIcon className="h-3 w-3 mr-1" /> Usuário</>
                             )}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.role === "admin" ? (
+                            <span className="text-muted-foreground">Todos</span>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <Globe className="h-3 w-3 text-muted-foreground" />
+                              {user.country || "-"}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           {new Date(user.created_at).toLocaleDateString("pt-BR")}

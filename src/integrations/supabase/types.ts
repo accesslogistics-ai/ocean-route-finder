@@ -14,8 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      port_countries: {
+        Row: {
+          country: string
+          created_at: string
+          id: string
+          port: string
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          id?: string
+          port: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          id?: string
+          port?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          country: string | null
           created_at: string
           email: string
           full_name: string | null
@@ -24,6 +46,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          country?: string | null
           created_at?: string
           email: string
           full_name?: string | null
@@ -32,6 +55,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          country?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
@@ -127,10 +151,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_tariff: {
+        Args: { _pod: string; _user_id: string }
+        Returns: boolean
+      }
       get_unique_carriers: {
         Args: never
         Returns: {
           carrier: string
+        }[]
+      }
+      get_unique_countries: {
+        Args: never
+        Returns: {
+          country: string
         }[]
       }
       get_unique_pods: {
