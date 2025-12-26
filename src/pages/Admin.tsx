@@ -5,6 +5,7 @@ import { useCountries } from "@/hooks/useCountries";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
+import { ImportPorts } from "@/components/ImportPorts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -236,17 +237,20 @@ export default function Admin() {
               </CardDescription>
             </div>
 
-            <Dialog open={dialogOpen} onOpenChange={(open) => {
-              setDialogOpen(open);
-              if (!open) resetForm();
-            }}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Novo Usuário
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
+            <div className="flex gap-2">
+              <ImportPorts />
+              
+              <Dialog open={dialogOpen} onOpenChange={(open) => {
+                setDialogOpen(open);
+                if (!open) resetForm();
+              }}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Novo Usuário
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Criar Novo Usuário</DialogTitle>
                   <DialogDescription>
@@ -376,6 +380,7 @@ export default function Admin() {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </CardHeader>
 
           <CardContent>
