@@ -11,7 +11,6 @@ interface CreateUserRequest {
   password: string;
   fullName?: string | null;
   role: "admin" | "user";
-  country?: string | null;
 }
 
 serve(async (req: Request) => {
@@ -60,7 +59,7 @@ serve(async (req: Request) => {
     }
 
     // Parse request body
-    const { email, password, fullName, role, country }: CreateUserRequest = await req.json();
+    const { email, password, fullName, role }: CreateUserRequest = await req.json();
 
     if (!email || !password || !role) {
       return new Response(
@@ -97,7 +96,6 @@ serve(async (req: Request) => {
         user_id: newUser.user.id,
         email: email,
         full_name: fullName || null,
-        country: role === "user" ? country : null,
       });
 
     if (profileError) {

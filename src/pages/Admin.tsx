@@ -1,13 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2, Globe, Eye } from "lucide-react";
-import { useCountries } from "@/hooks/useCountries";
-import { useSimulation } from "@/contexts/SimulationContext";
+import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
-import { ImportPorts } from "@/components/ImportPorts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,7 +51,6 @@ const createUserSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").max(100, "Senha muito longa"),
   fullName: z.string().trim().max(100, "Nome muito longo").optional(),
   role: z.enum(["admin", "user"]),
-  country: z.string().optional(),
 });
 
 interface UserWithRole {
@@ -63,7 +58,6 @@ interface UserWithRole {
   email: string;
   full_name: string | null;
   role: "admin" | "user";
-  country: string | null;
   created_at: string;
 }
 
@@ -73,13 +67,9 @@ export default function Admin() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<"admin" | "user">("user");
-  const [country, setCountry] = useState<string>("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: countries = [] } = useCountries();
-  const { startSimulation } = useSimulation();
-  const navigate = useNavigate();
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -107,7 +97,6 @@ export default function Admin() {
           email: profile.email,
           full_name: profile.full_name,
           role: (userRole?.role || "user") as "admin" | "user",
-          country: profile.country,
           created_at: profile.created_at,
         };
       }) as UserWithRole[];
@@ -122,7 +111,6 @@ export default function Admin() {
           password: data.password,
           fullName: data.fullName || null,
           role: data.role,
-          country: data.country || null,
         },
       });
 
@@ -191,7 +179,6 @@ export default function Admin() {
     setPassword("");
     setFullName("");
     setRole("user");
-    setCountry("");
     setErrors({});
   };
 
@@ -199,18 +186,11 @@ export default function Admin() {
     e.preventDefault();
     setErrors({});
 
-    // Se for usuário comum, país é obrigatório
-    if (role === "user" && !country) {
-      setErrors({ country: "País é obrigatório para usuários" });
-      return;
-    }
-
     const result = createUserSchema.safeParse({ 
       email, 
       password, 
       fullName, 
       role,
-      country: role === "user" ? country : undefined,
     });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -222,15 +202,6 @@ export default function Admin() {
     }
 
     createUserMutation.mutate(result.data);
-  };
-
-  const handleSimulate = (user: UserWithRole) => {
-    startSimulation({
-      id: user.id,
-      email: user.email,
-      country: user.country,
-    });
-    navigate("/");
   };
 
   return (
@@ -250,20 +221,17 @@ export default function Admin() {
               </CardDescription>
             </div>
 
-            <div className="flex gap-2">
-              <ImportPorts />
-              
-              <Dialog open={dialogOpen} onOpenChange={(open) => {
-                setDialogOpen(open);
-                if (!open) resetForm();
-              }}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Novo Usuário
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
+            <Dialog open={dialogOpen} onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Novo Usuário
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Criar Novo Usuário</DialogTitle>
                   <DialogDescription>
@@ -319,10 +287,7 @@ export default function Admin() {
 
                   <div className="space-y-2">
                     <Label htmlFor="new-role">Tipo de Usuário *</Label>
-                    <Select value={role} onValueChange={(v) => {
-                      setRole(v as "admin" | "user");
-                      if (v === "admin") setCountry("");
-                    }}>
+                    <Select value={role} onValueChange={(v) => setRole(v as "admin" | "user")}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -342,33 +307,6 @@ export default function Admin() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {role === "user" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="new-country">País *</Label>
-                      <Select value={country} onValueChange={setCountry}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o país" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {countries.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              <div className="flex items-center gap-2">
-                                <Globe className="h-4 w-4" />
-                                {c}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.country && (
-                        <p className="text-sm text-destructive">{errors.country}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        O usuário só terá acesso às tarifas com destino aos portos deste país.
-                      </p>
-                    </div>
-                  )}
 
                   <DialogFooter>
                     <Button
@@ -393,7 +331,6 @@ export default function Admin() {
                 </form>
               </DialogContent>
             </Dialog>
-            </div>
           </CardHeader>
 
           <CardContent>
@@ -414,9 +351,8 @@ export default function Admin() {
                       <TableHead>Email</TableHead>
                       <TableHead>Nome</TableHead>
                       <TableHead>Tipo</TableHead>
-                      <TableHead>País</TableHead>
                       <TableHead>Criado em</TableHead>
-                      <TableHead className="w-[100px]">Ações</TableHead>
+                      <TableHead className="w-[80px]">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -434,63 +370,38 @@ export default function Admin() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {user.role === "admin" ? (
-                            <span className="text-muted-foreground">Todos</span>
-                          ) : (
-                            <div className="flex items-center gap-1">
-                              <Globe className="h-3 w-3 text-muted-foreground" />
-                              {user.country || "-"}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
                           {new Date(user.created_at).toLocaleDateString("pt-BR")}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
-                            {/* Simulate button - only for non-admin users */}
-                            {user.role !== "admin" && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="text-primary hover:text-primary hover:bg-primary/10"
-                                onClick={() => handleSimulate(user)}
-                                title={`Simular visão de ${user.email}`}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               >
-                                <Eye className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
-                            )}
-                            
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação não pode ser desfeita. O usuário{" "}
+                                  <strong>{user.email}</strong> será removido permanentemente.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => deleteUserMutation.mutate(user.id)}
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita. O usuário{" "}
-                                    <strong>{user.email}</strong> será removido permanentemente.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => deleteUserMutation.mutate(user.id)}
-                                  >
-                                    Excluir
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))}
