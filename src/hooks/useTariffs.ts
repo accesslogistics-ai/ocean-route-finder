@@ -30,41 +30,12 @@ export interface TariffFilters {
 export interface UseTariffsOptions {
   enabled?: boolean;
   limit?: number;
-  simulatedCountry?: string | null;
 }
 
 export function useTariffs(filters: TariffFilters = {}, options: UseTariffsOptions = {}) {
   return useQuery({
-    queryKey: ["tariffs", filters, options.limit ?? null, options.simulatedCountry ?? null],
+    queryKey: ["tariffs", filters, options.limit ?? null],
     queryFn: async () => {
-      // If simulating a user with a specific country, use the RPC function
-      if (options.simulatedCountry) {
-        const { data, error } = await supabase.rpc("get_tariffs_by_country", {
-          p_country: options.simulatedCountry,
-        });
-
-        if (error) throw error;
-
-        let result = data as Tariff[];
-
-        // Apply additional filters
-        if (filters.carrier) {
-          result = result.filter((t) => t.carrier === filters.carrier);
-        }
-        if (filters.pol) {
-          result = result.filter((t) => t.pol === filters.pol);
-        }
-        if (filters.pod) {
-          result = result.filter((t) => t.pod === filters.pod);
-        }
-        if (options.limit && options.limit > 0) {
-          result = result.slice(0, options.limit);
-        }
-
-        return result;
-      }
-
-      // Normal query (no simulation)
       let query = supabase.from("tariffs").select("*");
 
       if (filters.carrier) {

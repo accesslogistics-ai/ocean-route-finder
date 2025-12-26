@@ -1,9 +1,7 @@
 import { Link } from "react-router-dom";
 import { Anchor, Waves, LogOut, Settings, User } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { useSimulation } from "@/contexts/SimulationContext";
 import { ImportTariffs } from "./ImportTariffs";
-import { SimulationBanner } from "./SimulationBanner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,12 +14,9 @@ import { Badge } from "@/components/ui/badge";
 
 export function Header() {
   const { user, isAdmin, signOut } = useAuthContext();
-  const { isSimulating } = useSimulation();
 
   return (
-    <>
-      <SimulationBanner />
-      <header className={`bg-card border-b ${isSimulating ? "mt-12" : ""}`}>
+    <header className="bg-card border-b">
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -98,7 +93,6 @@ export function Header() {
           </div>
         </div>
       </div>
-      </header>
-    </>
+    </header>
   );
 }

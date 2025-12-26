@@ -6,7 +6,6 @@ import { TariffTable } from "@/components/TariffTable";
 import { RouteComparison } from "@/components/RouteComparison";
 import { ExportActions } from "@/components/ExportActions";
 import { useTariffs, useRouteComparison, TariffFilters as TariffFiltersType } from "@/hooks/useTariffs";
-import { useSimulation } from "@/contexts/SimulationContext";
 import { Search, BarChart3 } from "lucide-react";
 
 const Index = () => {
@@ -17,12 +16,10 @@ const Index = () => {
   const [appliedFilters, setAppliedFilters] = useState<TariffFiltersType>({});
   const [selectedTariffs, setSelectedTariffs] = useState<string[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
-  const { simulatedCountry } = useSimulation();
 
   const { data: tariffs = [], isLoading } = useTariffs(appliedFilters, { 
     enabled: hasSearched, 
     limit: 50,
-    simulatedCountry,
   });
   const { data: comparisonTariffs = [], isLoading: loadingComparison } = useRouteComparison(
     appliedFilters.pol || "",
