@@ -155,6 +155,34 @@ export type Database = {
         Args: { _pod: string; _user_id: string }
         Returns: boolean
       }
+      get_tariffs_by_country: {
+        Args: { p_country: string }
+        Returns: {
+          carrier: string
+          commodity: string | null
+          created_at: string
+          ens_ams: string | null
+          free_time: string | null
+          free_time_destination: string | null
+          free_time_origin: string | null
+          id: string
+          pod: string
+          pol: string
+          price_20dc: number | null
+          price_40hc: number | null
+          price_40reefer: number | null
+          subject_to: string | null
+          transit_time: string | null
+          updated_at: string
+          validity: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "tariffs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_unique_carriers: {
         Args: never
         Returns: {
