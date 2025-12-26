@@ -3,50 +3,129 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Download, FileSpreadsheet, FileText, ChevronDown } from "lucide-react";
 import { Tariff } from "@/hooks/useTariffs";
 import { toast } from "sonner";
+import XLSX from "xlsx-js-style";
 
 interface ExportActionsProps {
   tariffs: Tariff[];
   selectedTariffs: string[];
 }
 
-function exportToCSV(tariffs: Tariff[], filename: string) {
+const headerStyle = {
+  font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+  fill: { fgColor: { rgb: "0066CC" } },
+  alignment: { horizontal: "center", vertical: "center", wrapText: true },
+  border: {
+    top: { style: "thin", color: { rgb: "000000" } },
+    bottom: { style: "thin", color: { rgb: "000000" } },
+    left: { style: "thin", color: { rgb: "000000" } },
+    right: { style: "thin", color: { rgb: "000000" } },
+  },
+};
+
+const cellStyle = {
+  font: { sz: 10 },
+  alignment: { vertical: "center" },
+  border: {
+    top: { style: "thin", color: { rgb: "CCCCCC" } },
+    bottom: { style: "thin", color: { rgb: "CCCCCC" } },
+    left: { style: "thin", color: { rgb: "CCCCCC" } },
+    right: { style: "thin", color: { rgb: "CCCCCC" } },
+  },
+};
+
+const currencyStyle = {
+  ...cellStyle,
+  alignment: { horizontal: "right", vertical: "center" },
+  numFmt: '"USD "#,##0.00',
+};
+
+const centerStyle = {
+  ...cellStyle,
+  alignment: { horizontal: "center", vertical: "center" },
+};
+
+function exportToXLSX(tariffs: Tariff[], filename: string) {
   const headers = [
     "Armador",
     "POL",
     "POD",
+    "Commodity",
     "20'DC (USD)",
     "40'HC (USD)",
     "40'Reefer (USD)",
-    "Free Time",
+    "FT Origem",
+    "FT Destino",
     "Transit Time",
     "ENS/AMS",
     "Validade",
-    "Subject to",
+    "Observações",
   ];
 
-  const rows = tariffs.map((t) => [
-    t.carrier,
-    t.pol,
-    t.pod,
-    t.price_20dc?.toString() || "",
-    t.price_40hc?.toString() || "",
-    t.price_40reefer?.toString() || "",
-    t.free_time || "",
-    t.transit_time || "",
-    t.ens_ams || "",
-    t.validity || "",
-    t.subject_to || "",
+  // Create header row with styles
+  const headerRow = headers.map((h) => ({
+    v: h,
+    t: "s",
+    s: headerStyle,
+  }));
+
+  // Create data rows with styles
+  const dataRows = tariffs.map((t) => [
+    { v: t.carrier || "-", t: "s", s: cellStyle },
+    { v: t.pol || "-", t: "s", s: cellStyle },
+    { v: t.pod || "-", t: "s", s: cellStyle },
+    { v: t.commodity || "-", t: "s", s: cellStyle },
+    t.price_20dc
+      ? { v: t.price_20dc, t: "n", s: currencyStyle }
+      : { v: "-", t: "s", s: centerStyle },
+    t.price_40hc
+      ? { v: t.price_40hc, t: "n", s: currencyStyle }
+      : { v: "-", t: "s", s: centerStyle },
+    t.price_40reefer
+      ? { v: t.price_40reefer, t: "n", s: currencyStyle }
+      : { v: "-", t: "s", s: centerStyle },
+    { v: t.free_time_origin || "-", t: "s", s: centerStyle },
+    { v: t.free_time_destination || "-", t: "s", s: centerStyle },
+    { v: t.transit_time || "-", t: "s", s: centerStyle },
+    { v: t.ens_ams || "-", t: "s", s: centerStyle },
+    { v: t.validity || "-", t: "s", s: centerStyle },
+    { v: t.subject_to || "-", t: "s", s: cellStyle },
   ]);
 
-  const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
+  // Create worksheet
+  const ws = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows]);
 
-  const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${filename}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+  // Set column widths
+  ws["!cols"] = [
+    { wch: 12 }, // Armador
+    { wch: 25 }, // POL
+    { wch: 25 }, // POD
+    { wch: 15 }, // Commodity
+    { wch: 14 }, // 20'DC
+    { wch: 14 }, // 40'HC
+    { wch: 14 }, // 40'Reefer
+    { wch: 12 }, // FT Origem
+    { wch: 12 }, // FT Destino
+    { wch: 12 }, // Transit Time
+    { wch: 12 }, // ENS/AMS
+    { wch: 12 }, // Validade
+    { wch: 35 }, // Observações
+  ];
+
+  // Set row height for header
+  ws["!rows"] = [{ hpt: 30 }];
+
+  // Enable auto-filter
+  ws["!autofilter"] = { ref: `A1:M${tariffs.length + 1}` };
+
+  // Freeze first row
+  ws["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", state: "frozen" };
+
+  // Create workbook
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Tarifas");
+
+  // Save file
+  XLSX.writeFile(wb, `${filename}.xlsx`);
 }
 
 function generatePDFContent(tariffs: Tariff[]): string {
@@ -132,13 +211,13 @@ function exportToPDF(tariffs: Tariff[], filename: string) {
 export function ExportActions({ tariffs, selectedTariffs }: ExportActionsProps) {
   const dataToExport = selectedTariffs.length > 0 ? tariffs.filter((t) => selectedTariffs.includes(t.id)) : tariffs;
 
-  const handleExportCSV = () => {
+  const handleExportXLSX = () => {
     if (dataToExport.length === 0) {
       toast.error("Nenhuma tarifa para exportar");
       return;
     }
-    exportToCSV(dataToExport, `tarifas_${new Date().toISOString().split("T")[0]}`);
-    toast.success(`${dataToExport.length} tarifa(s) exportada(s) para CSV`);
+    exportToXLSX(dataToExport, `tarifas_${new Date().toISOString().split("T")[0]}`);
+    toast.success(`${dataToExport.length} tarifa(s) exportada(s) para Excel`);
   };
 
   const handleExportPDF = () => {
@@ -160,9 +239,9 @@ export function ExportActions({ tariffs, selectedTariffs }: ExportActionsProps) 
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-popover z-50">
-        <DropdownMenuItem onClick={handleExportCSV} className="gap-2 cursor-pointer">
+        <DropdownMenuItem onClick={handleExportXLSX} className="gap-2 cursor-pointer">
           <FileSpreadsheet className="h-4 w-4" />
-          Exportar para Excel (CSV)
+          Exportar para Excel (.xlsx)
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleExportPDF} className="gap-2 cursor-pointer">
           <FileText className="h-4 w-4" />
