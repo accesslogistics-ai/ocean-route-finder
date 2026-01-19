@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Upload, FileSpreadsheet, AlertTriangle, X, MapPin } from "lucide-react";
+import { Upload, FileSpreadsheet, X, MapPin, Check } from "lucide-react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -226,30 +226,26 @@ export function ImportDestinations({ trigger }: ImportDestinationsProps) {
 
     try {
       setProgress(10);
-      const { error: deleteError } = await supabase
-        .from("destinations")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-      
-      if (deleteError) {
-        throw new Error(`Erro ao limpar dados: ${deleteError.message}`);
-      }
 
-      setProgress(30);
-
+      // Use UPSERT instead of DELETE + INSERT (Smart Merge)
       const batchSize = 100;
       const totalBatches = Math.ceil(parsedData.length / batchSize);
       
       for (let i = 0; i < parsedData.length; i += batchSize) {
         const batch = parsedData.slice(i, i + batchSize);
-        const { error: insertError } = await supabase.from("destinations").insert(batch);
+        const { error: upsertError } = await supabase
+          .from("destinations")
+          .upsert(batch, { 
+            onConflict: 'destination',
+            ignoreDuplicates: false 
+          });
         
-        if (insertError) {
-          throw new Error(`Erro ao inserir dados: ${insertError.message}`);
+        if (upsertError) {
+          throw new Error(`Erro ao inserir/atualizar dados: ${upsertError.message}`);
         }
 
         const currentBatch = Math.floor(i / batchSize) + 1;
-        setProgress(30 + (currentBatch / totalBatches) * 60);
+        setProgress(10 + (currentBatch / totalBatches) * 80);
       }
 
       setProgress(100);
@@ -259,7 +255,7 @@ export function ImportDestinations({ trigger }: ImportDestinationsProps) {
 
       toast({
         title: "Importação concluída!",
-        description: `${parsedData.length} destinos importados com sucesso.`,
+        description: `${parsedData.length} destinos adicionados/atualizados com sucesso.`,
       });
 
       handleClose();
@@ -382,12 +378,12 @@ export function ImportDestinations({ trigger }: ImportDestinationsProps) {
                 )}
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-destructive">Atenção</p>
+                  <p className="font-medium text-primary">Merge inteligente</p>
                   <p className="text-sm text-muted-foreground">
-                    Todos os dados atuais de destinos serão apagados e substituídos pelos {parsedData.length} novos registros.
+                    Os {parsedData.length} destinos serão adicionados ao dicionário existente. Destinos já cadastrados terão o país atualizado.
                   </p>
                 </div>
               </div>
