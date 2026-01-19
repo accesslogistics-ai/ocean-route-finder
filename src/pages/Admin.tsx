@@ -80,7 +80,15 @@ interface UserWithRole {
 }
 
 export default function Admin() {
-  const { t } = useTranslation();
+  const { t, ready } = useTranslation();
+  
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Carregando...</div>
+      </div>
+    );
+  }
   const [activeTab, setActiveTab] = useState("users");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
