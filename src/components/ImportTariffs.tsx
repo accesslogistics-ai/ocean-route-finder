@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Upload, FileSpreadsheet, AlertTriangle, X, Check } from "lucide-react";
+import { Upload, FileSpreadsheet, AlertTriangle, X, Check, MapPin } from "lucide-react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -106,14 +106,22 @@ function findHeaderRowIndex(data: unknown[][]): number {
   return -1;
 }
 
+interface UnknownPod {
+  pod: string;
+  count: number;
+}
+
 export function ImportTariffs() {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedTariff[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
+  const [unknownPods, setUnknownPods] = useState<UnknownPod[]>([]);
+  const [showValidationWarning, setShowValidationWarning] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -122,7 +130,10 @@ export function ImportTariffs() {
     setParsedData([]);
     setIsLoading(false);
     setIsImporting(false);
+    setIsValidating(false);
     setProgress(0);
+    setUnknownPods([]);
+    setShowValidationWarning(false);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -271,10 +282,62 @@ export function ImportTariffs() {
     }
   }, [parseExcelFile]);
 
-  const handleImport = useCallback(async () => {
+  const validatePods = useCallback(async () => {
+    if (parsedData.length === 0) return;
+
+    setIsValidating(true);
+
+    try {
+      // Fetch all known destinations
+      const { data: knownDestinations, error } = await supabase
+        .from("destinations")
+        .select("destination");
+
+      if (error) {
+        throw new Error(`Erro ao buscar destinos: ${error.message}`);
+      }
+
+      const knownSet = new Set(
+        (knownDestinations || []).map((d) => d.destination.toLowerCase())
+      );
+
+      // Find unknown PODs and count occurrences
+      const unknownPodsMap = new Map<string, number>();
+      parsedData.forEach((tariff) => {
+        const podLower = tariff.pod.toLowerCase();
+        if (!knownSet.has(podLower)) {
+          unknownPodsMap.set(tariff.pod, (unknownPodsMap.get(tariff.pod) || 0) + 1);
+        }
+      });
+
+      // Convert to array and sort by count
+      const unknownList: UnknownPod[] = Array.from(unknownPodsMap.entries())
+        .map(([pod, count]) => ({ pod, count }))
+        .sort((a, b) => b.count - a.count);
+
+      if (unknownList.length > 0) {
+        setUnknownPods(unknownList);
+        setShowValidationWarning(true);
+      } else {
+        // All PODs are known, proceed with import
+        await executeImport();
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro na validação",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    } finally {
+      setIsValidating(false);
+    }
+  }, [parsedData, toast]);
+
+  const executeImport = useCallback(async () => {
     if (parsedData.length === 0) return;
 
     setIsImporting(true);
+    setShowValidationWarning(false);
     setProgress(0);
 
     try {
@@ -453,21 +516,77 @@ export function ImportTariffs() {
                 )}
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-destructive">Atenção</p>
-                  <p className="text-sm text-muted-foreground">
-                    Todos os dados atuais de tarifas serão apagados e substituídos pelos {parsedData.length} novos registros.
-                  </p>
+              {/* Validation Warning for Unknown PODs */}
+              {showValidationWarning && unknownPods.length > 0 && (
+                <div className="flex flex-col gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-medium text-amber-600">Destinos não reconhecidos</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Os seguintes portos de destino não estão cadastrados no dicionário. 
+                        Usuários com restrição por país <strong>NÃO verão</strong> tarifas para estes destinos.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="ml-8 max-h-32 overflow-auto">
+                    <ul className="text-sm space-y-1">
+                      {unknownPods.slice(0, 10).map(({ pod, count }) => (
+                        <li key={pod} className="flex justify-between">
+                          <span className="font-medium">{pod}</span>
+                          <span className="text-muted-foreground">{count} tarifa{count > 1 ? 's' : ''}</span>
+                        </li>
+                      ))}
+                      {unknownPods.length > 10 && (
+                        <li className="text-muted-foreground">
+                          ... e mais {unknownPods.length - 10} destinos
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                  
+                  <div className="flex gap-2 ml-8 mt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setShowValidationWarning(false);
+                        handleClose();
+                      }}
+                    >
+                      Cancelar e cadastrar destinos
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      onClick={executeImport}
+                      disabled={isImporting}
+                    >
+                      Continuar mesmo assim
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {isImporting && (
+              {/* Standard warning about replacing data */}
+              {!showValidationWarning && (
+                <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-destructive">Atenção</p>
+                    <p className="text-sm text-muted-foreground">
+                      Todos os dados atuais de tarifas serão apagados e substituídos pelos {parsedData.length} novos registros.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {(isImporting || isValidating) && (
                 <div className="space-y-2">
-                  <Progress value={progress} />
+                  <Progress value={isValidating ? undefined : progress} />
                   <p className="text-sm text-center text-muted-foreground">
-                    Importando... {Math.round(progress)}%
+                    {isValidating ? "Validando destinos..." : `Importando... ${Math.round(progress)}%`}
                   </p>
                 </div>
               )}
@@ -475,12 +594,12 @@ export function ImportTariffs() {
           )}
         </div>
 
-        {file && parsedData.length > 0 && (
+        {file && parsedData.length > 0 && !showValidationWarning && (
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={handleClose} disabled={isImporting}>
+            <Button variant="outline" onClick={handleClose} disabled={isImporting || isValidating}>
               Cancelar
             </Button>
-            <Button onClick={handleImport} disabled={isImporting} className="gap-2">
+            <Button onClick={validatePods} disabled={isImporting || isValidating} className="gap-2">
               <Check className="h-4 w-4" />
               Confirmar Importação
             </Button>
