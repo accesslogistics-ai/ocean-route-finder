@@ -1,17 +1,22 @@
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tariff } from "@/hooks/useTariffs";
 import { Ship, Clock, Calendar, TrendingDown, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LOCALE_MAP, type SupportedLanguage } from "@/i18n";
 
 interface RouteComparisonProps {
   tariffs: Tariff[];
   isLoading?: boolean;
 }
 
-function formatPrice(price: number | null): string {
+function formatPrice(price: number | null, locale: string): string {
   if (price === null || price === undefined) return "-";
-  return `USD ${price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+  }).format(price);
 }
 
 function findBestPrice(tariffs: Tariff[], field: keyof Pick<Tariff, "price_20dc" | "price_40hc" | "price_40reefer">) {
@@ -30,13 +35,16 @@ function findBestTT(tariffs: Tariff[]) {
 }
 
 export function RouteComparison({ tariffs, isLoading }: RouteComparisonProps) {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_MAP[i18n.language as SupportedLanguage] || "pt-BR";
+
   if (isLoading) {
     return (
       <Card>
         <CardContent className="py-12">
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-3 text-muted-foreground">Carregando comparativo...</span>
+            <span className="ml-3 text-muted-foreground">{t("tariffs.loadingComparison")}</span>
           </div>
         </CardContent>
       </Card>
@@ -59,10 +67,10 @@ export function RouteComparison({ tariffs, isLoading }: RouteComparisonProps) {
       <CardHeader>
         <CardTitle className="text-lg font-heading flex items-center gap-2">
           <TrendingDown className="h-5 w-5 text-primary" />
-          Comparativo de Preços: {route}
+          {t("tariffs.priceComparison")}: {route}
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          {tariffs.length} armador{tariffs.length > 1 ? "es" : ""} disponíve{tariffs.length > 1 ? "is" : "l"}
+          {tariffs.length} {t("tariffs.carriersAvailable")}
         </p>
       </CardHeader>
       <CardContent>
@@ -88,7 +96,7 @@ export function RouteComparison({ tariffs, isLoading }: RouteComparisonProps) {
                   <div className="absolute top-2 right-2">
                     <Badge className="bg-success text-success-foreground gap-1">
                       <Award className="h-3 w-3" />
-                      Melhor Preço
+                      {t("tariffs.bestPrice")}
                     </Badge>
                   </div>
                 )}
@@ -107,7 +115,7 @@ export function RouteComparison({ tariffs, isLoading }: RouteComparisonProps) {
                           isBest20dc && "text-success"
                         )}
                       >
-                        {formatPrice(tariff.price_20dc)}
+                        {formatPrice(tariff.price_20dc, locale)}
                       </span>
                     </div>
 
@@ -119,7 +127,7 @@ export function RouteComparison({ tariffs, isLoading }: RouteComparisonProps) {
                           isBest40hc && "text-success"
                         )}
                       >
-                        {formatPrice(tariff.price_40hc)}
+                        {formatPrice(tariff.price_40hc, locale)}
                       </span>
                     </div>
 
@@ -131,7 +139,7 @@ export function RouteComparison({ tariffs, isLoading }: RouteComparisonProps) {
                           isBest40reefer && "text-success"
                         )}
                       >
-                        {formatPrice(tariff.price_40reefer)}
+                        {formatPrice(tariff.price_40reefer, locale)}
                       </span>
                     </div>
 
@@ -139,7 +147,7 @@ export function RouteComparison({ tariffs, isLoading }: RouteComparisonProps) {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          Transit Time
+                          {t("tariffs.transitTime")}
                         </span>
                         <span className={cn("text-sm font-medium", isBestTT && "text-success")}>
                           {tariff.transit_time || "-"}
@@ -147,14 +155,14 @@ export function RouteComparison({ tariffs, isLoading }: RouteComparisonProps) {
                       </div>
 
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-sm text-muted-foreground">Free Time</span>
+                        <span className="text-sm text-muted-foreground">{t("tariffs.freeTime")}</span>
                         <span className="text-sm font-medium">{tariff.free_time || "-"}</span>
                       </div>
 
                       <div className="flex justify-between items-center mt-2">
                         <span className="text-sm text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          Validade
+                          {t("tariffs.validity")}
                         </span>
                         <Badge variant="secondary" className="text-xs">
                           {tariff.validity || "-"}

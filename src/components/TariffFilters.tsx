@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,7 @@ export function TariffFilters({
   onSearch,
   onReset,
 }: TariffFiltersProps) {
+  const { t } = useTranslation();
   const { data: carriers = [], isLoading: loadingCarriers } = useCarriers();
   const { data: pols = [], isLoading: loadingPols } = usePols(carrier || undefined);
   const { data: pods = [], isLoading: loadingPods } = usePods(carrier || undefined, pol || undefined, userCountry);
@@ -39,11 +41,11 @@ export function TariffFilters({
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Ship className="h-4 w-4" />
-              Armador
+              {t("tariffs.carrier")}
             </label>
             <Select value={carrier} onValueChange={onCarrierChange}>
               <SelectTrigger className="bg-background">
-                <SelectValue placeholder={loadingCarriers ? "Carregando..." : "Selecione o armador"} />
+                <SelectValue placeholder={loadingCarriers ? t("common.loading") : t("tariffs.selectCarrier")} />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50 max-h-[300px]">
                 {carriers.map((c) => (
@@ -59,11 +61,11 @@ export function TariffFilters({
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              Porto de Origem (POL)
+              {t("tariffs.origin")}
             </label>
             <Select value={pol} onValueChange={onPolChange}>
               <SelectTrigger className="bg-background">
-                <SelectValue placeholder={loadingPols ? "Carregando..." : "Selecione a origem"} />
+                <SelectValue placeholder={loadingPols ? t("common.loading") : t("tariffs.selectOrigin")} />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50 max-h-[300px]">
                 {pols.map((p) => (
@@ -79,11 +81,11 @@ export function TariffFilters({
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Navigation className="h-4 w-4" />
-              Porto de Destino (POD)
+              {t("tariffs.destination")}
             </label>
             <Select value={pod} onValueChange={onPodChange}>
               <SelectTrigger className="bg-background">
-                <SelectValue placeholder={loadingPods ? "Carregando..." : "Selecione o destino"} />
+                <SelectValue placeholder={loadingPods ? t("common.loading") : t("tariffs.selectDestination")} />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50 max-h-[300px]">
                 {pods.map((p) => (
@@ -99,7 +101,7 @@ export function TariffFilters({
           <div className="flex items-end gap-2">
             <Button onClick={onSearch} className="flex-1 gap-2">
               <Search className="h-4 w-4" />
-              Buscar
+              {t("common.search")}
             </Button>
             <Button variant="outline" onClick={onReset} className="gap-2">
               <RotateCcw className="h-4 w-4" />

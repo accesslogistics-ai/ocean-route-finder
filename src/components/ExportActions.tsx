@@ -1,9 +1,11 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Download, FileSpreadsheet, FileText, ChevronDown } from "lucide-react";
 import { Tariff } from "@/hooks/useTariffs";
 import { toast } from "sonner";
 import XLSX from "xlsx-js-style";
+import { LOCALE_MAP, type SupportedLanguage } from "@/i18n";
 
 interface ExportActionsProps {
   tariffs: Tariff[];
@@ -44,21 +46,21 @@ const centerStyle = {
   alignment: { horizontal: "center", vertical: "center" },
 };
 
-function exportToXLSX(tariffs: Tariff[], filename: string) {
+function exportToXLSX(tariffs: Tariff[], filename: string, t: (key: string) => string) {
   const headers = [
-    "Armador",
+    t("tariffs.carrier"),
     "POL",
     "POD",
     "Commodity",
     "20'DC (USD)",
     "40'HC (USD)",
     "40'Reefer (USD)",
-    "FT Origem",
-    "FT Destino",
+    "FT Origin",
+    "FT Destination",
     "Transit Time",
     "ENS/AMS",
-    "Validade",
-    "Observações",
+    t("tariffs.validity"),
+    "Subject to",
   ];
 
   // Create header row with styles
@@ -69,26 +71,26 @@ function exportToXLSX(tariffs: Tariff[], filename: string) {
   }));
 
   // Create data rows with styles
-  const dataRows = tariffs.map((t) => [
-    { v: t.carrier || "-", t: "s", s: cellStyle },
-    { v: t.pol || "-", t: "s", s: cellStyle },
-    { v: t.pod || "-", t: "s", s: cellStyle },
-    { v: t.commodity || "-", t: "s", s: cellStyle },
-    t.price_20dc
-      ? { v: t.price_20dc, t: "n", s: currencyStyle }
+  const dataRows = tariffs.map((tariff) => [
+    { v: tariff.carrier || "-", t: "s", s: cellStyle },
+    { v: tariff.pol || "-", t: "s", s: cellStyle },
+    { v: tariff.pod || "-", t: "s", s: cellStyle },
+    { v: tariff.commodity || "-", t: "s", s: cellStyle },
+    tariff.price_20dc
+      ? { v: tariff.price_20dc, t: "n", s: currencyStyle }
       : { v: "-", t: "s", s: centerStyle },
-    t.price_40hc
-      ? { v: t.price_40hc, t: "n", s: currencyStyle }
+    tariff.price_40hc
+      ? { v: tariff.price_40hc, t: "n", s: currencyStyle }
       : { v: "-", t: "s", s: centerStyle },
-    t.price_40reefer
-      ? { v: t.price_40reefer, t: "n", s: currencyStyle }
+    tariff.price_40reefer
+      ? { v: tariff.price_40reefer, t: "n", s: currencyStyle }
       : { v: "-", t: "s", s: centerStyle },
-    { v: t.free_time_origin || "-", t: "s", s: centerStyle },
-    { v: t.free_time_destination || "-", t: "s", s: centerStyle },
-    { v: t.transit_time || "-", t: "s", s: centerStyle },
-    { v: t.ens_ams || "-", t: "s", s: centerStyle },
-    { v: t.validity || "-", t: "s", s: centerStyle },
-    { v: t.subject_to || "-", t: "s", s: cellStyle },
+    { v: tariff.free_time_origin || "-", t: "s", s: centerStyle },
+    { v: tariff.free_time_destination || "-", t: "s", s: centerStyle },
+    { v: tariff.transit_time || "-", t: "s", s: centerStyle },
+    { v: tariff.ens_ams || "-", t: "s", s: centerStyle },
+    { v: tariff.validity || "-", t: "s", s: centerStyle },
+    { v: tariff.subject_to || "-", t: "s", s: cellStyle },
   ]);
 
   // Create worksheet
@@ -122,21 +124,21 @@ function exportToXLSX(tariffs: Tariff[], filename: string) {
 
   // Create workbook
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Tarifas");
+  XLSX.utils.book_append_sheet(wb, ws, "Tariffs");
 
   // Save file
   XLSX.writeFile(wb, `${filename}.xlsx`);
 }
 
-function generatePDFContent(tariffs: Tariff[]): string {
-  const date = new Date().toLocaleDateString("pt-BR");
+function generatePDFContent(tariffs: Tariff[], t: (key: string) => string, locale: string): string {
+  const date = new Date().toLocaleDateString(locale);
 
   let html = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Cotação de Frete Marítimo</title>
+      <title>${t("export.quoteTitle")}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
         h1 { color: #0066cc; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }
@@ -150,11 +152,11 @@ function generatePDFContent(tariffs: Tariff[]): string {
       </style>
     </head>
     <body>
-      <h1>Cotação de Frete Marítimo</h1>
-      <p class="date">Data: ${date}</p>
+      <h1>${t("export.quoteTitle")}</h1>
+      <p class="date">${t("export.date")}: ${date}</p>
       <table>
         <tr>
-          <th>Armador</th>
+          <th>${t("tariffs.carrier")}</th>
           <th>POL</th>
           <th>POD</th>
           <th>20'DC</th>
@@ -162,22 +164,27 @@ function generatePDFContent(tariffs: Tariff[]): string {
           <th>40'Reefer</th>
           <th>TT</th>
           <th>FT</th>
-          <th>Validade</th>
+          <th>${t("tariffs.validity")}</th>
         </tr>
   `;
 
-  tariffs.forEach((t) => {
+  tariffs.forEach((tariff) => {
+    const formatPrice = (price: number | null) => {
+      if (price === null) return "-";
+      return new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(price);
+    };
+
     html += `
       <tr>
-        <td>${t.carrier}</td>
-        <td>${t.pol}</td>
-        <td>${t.pod}</td>
-        <td class="price">${t.price_20dc ? `USD ${t.price_20dc.toLocaleString("pt-BR")}` : "-"}</td>
-        <td class="price">${t.price_40hc ? `USD ${t.price_40hc.toLocaleString("pt-BR")}` : "-"}</td>
-        <td class="price">${t.price_40reefer ? `USD ${t.price_40reefer.toLocaleString("pt-BR")}` : "-"}</td>
-        <td>${t.transit_time || "-"}</td>
-        <td>${t.free_time || "-"}</td>
-        <td>${t.validity || "-"}</td>
+        <td>${tariff.carrier}</td>
+        <td>${tariff.pol}</td>
+        <td>${tariff.pod}</td>
+        <td class="price">${formatPrice(tariff.price_20dc)}</td>
+        <td class="price">${formatPrice(tariff.price_40hc)}</td>
+        <td class="price">${formatPrice(tariff.price_40reefer)}</td>
+        <td>${tariff.transit_time || "-"}</td>
+        <td>${tariff.free_time || "-"}</td>
+        <td>${tariff.validity || "-"}</td>
       </tr>
     `;
   });
@@ -185,8 +192,8 @@ function generatePDFContent(tariffs: Tariff[]): string {
   html += `
       </table>
       <div class="footer">
-        <p>Cotação gerada automaticamente pelo Sistema de Tarifário.</p>
-        <p>Valores sujeitos a alteração sem aviso prévio. Consulte condições específicas (Subject to) de cada tarifa.</p>
+        <p>${t("export.quoteFooter")}</p>
+        <p>${t("export.quoteDisclaimer")}</p>
       </div>
     </body>
     </html>
@@ -195,8 +202,8 @@ function generatePDFContent(tariffs: Tariff[]): string {
   return html;
 }
 
-function exportToPDF(tariffs: Tariff[], filename: string) {
-  const html = generatePDFContent(tariffs);
+function exportToPDF(tariffs: Tariff[], filename: string, t: (key: string) => string, locale: string) {
+  const html = generatePDFContent(tariffs, t, locale);
   const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
 
@@ -209,24 +216,26 @@ function exportToPDF(tariffs: Tariff[], filename: string) {
 }
 
 export function ExportActions({ tariffs, selectedTariffs }: ExportActionsProps) {
-  const dataToExport = selectedTariffs.length > 0 ? tariffs.filter((t) => selectedTariffs.includes(t.id)) : tariffs;
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_MAP[i18n.language as SupportedLanguage] || "pt-BR";
+  const dataToExport = selectedTariffs.length > 0 ? tariffs.filter((tariff) => selectedTariffs.includes(tariff.id)) : tariffs;
 
   const handleExportXLSX = () => {
     if (dataToExport.length === 0) {
-      toast.error("Nenhuma tarifa para exportar");
+      toast.error(t("export.noTariffsToExport"));
       return;
     }
-    exportToXLSX(dataToExport, `tarifas_${new Date().toISOString().split("T")[0]}`);
-    toast.success(`${dataToExport.length} tarifa(s) exportada(s) para Excel`);
+    exportToXLSX(dataToExport, `tariffs_${new Date().toISOString().split("T")[0]}`, t);
+    toast.success(`${dataToExport.length} ${t("export.tariffsExported")}`);
   };
 
   const handleExportPDF = () => {
     if (dataToExport.length === 0) {
-      toast.error("Nenhuma tarifa para exportar");
+      toast.error(t("export.noTariffsToExport"));
       return;
     }
-    exportToPDF(dataToExport, `cotacao_${new Date().toISOString().split("T")[0]}`);
-    toast.success("Abrindo janela de impressão...");
+    exportToPDF(dataToExport, `quote_${new Date().toISOString().split("T")[0]}`, t, locale);
+    toast.success(t("export.openingPrint"));
   };
 
   return (
@@ -234,18 +243,18 @@ export function ExportActions({ tariffs, selectedTariffs }: ExportActionsProps) 
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="gap-2">
           <Download className="h-4 w-4" />
-          Exportar {selectedTariffs.length > 0 ? `(${selectedTariffs.length})` : ""}
+          {t("export.export")} {selectedTariffs.length > 0 ? `(${selectedTariffs.length})` : ""}
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-popover z-50">
         <DropdownMenuItem onClick={handleExportXLSX} className="gap-2 cursor-pointer">
           <FileSpreadsheet className="h-4 w-4" />
-          Exportar para Excel (.xlsx)
+          {t("export.exportExcel")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleExportPDF} className="gap-2 cursor-pointer">
           <FileText className="h-4 w-4" />
-          Exportar Cotação (PDF)
+          {t("export.exportPDF")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

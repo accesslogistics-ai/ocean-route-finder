@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Header } from "@/components/Header";
 import { TariffFilters } from "@/components/TariffFilters";
@@ -11,6 +12,7 @@ import { useLogSearch } from "@/hooks/useMonitoring";
 import { Search, BarChart3 } from "lucide-react";
 
 const Index = () => {
+  const { t } = useTranslation();
   const { user, effectiveCountry } = useAuthContext();
   const { logSearch } = useLogSearch();
   const [activeTab, setActiveTab] = useState("search");
@@ -90,11 +92,11 @@ const Index = () => {
             <TabsList className="bg-muted">
               <TabsTrigger value="search" className="gap-2">
                 <Search className="h-4 w-4" />
-                Consulta
+                {t("tariffs.query")}
               </TabsTrigger>
               <TabsTrigger value="compare" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
-                Comparativo
+                {t("tariffs.comparison")}
               </TabsTrigger>
             </TabsList>
 
@@ -117,8 +119,8 @@ const Index = () => {
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">Selecione uma rota para comparar</p>
-                <p className="text-sm">Escolha POL e POD nos filtros e clique em Buscar</p>
+                <p className="text-lg font-medium">{t("tariffs.selectRouteToCompare")}</p>
+                <p className="text-sm">{t("tariffs.choosePOLPOD")}</p>
               </div>
             )}
           </TabsContent>
