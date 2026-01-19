@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import { SimulationStateContext } from "@/contexts/AuthContext";
 
 interface SimulationContextType {
   isSimulating: boolean;
@@ -30,7 +31,9 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       startSimulation,
       stopSimulation,
     }}>
-      {children}
+      <SimulationStateContext.Provider value={{ isSimulating, simulatedCountry }}>
+        {children}
+      </SimulationStateContext.Provider>
     </SimulationContext.Provider>
   );
 }
