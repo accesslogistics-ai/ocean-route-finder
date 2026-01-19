@@ -1,9 +1,11 @@
+import { useTranslation } from "react-i18next";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tariff } from "@/hooks/useTariffs";
 import { Package, Clock, Calendar, AlertTriangle, Search } from "lucide-react";
+import { LOCALE_MAP, type SupportedLanguage } from "@/i18n";
 
 interface TariffTableProps {
   tariffs: Tariff[];
@@ -13,12 +15,18 @@ interface TariffTableProps {
   hasSearched?: boolean;
 }
 
-function formatPrice(price: number | null): string {
+function formatPrice(price: number | null, locale: string): string {
   if (price === null || price === undefined) return "-";
-  return `USD ${price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+  }).format(price);
 }
 
 export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoading, hasSearched }: TariffTableProps) {
+  const { t, i18n } = useTranslation();
+  const locale = LOCALE_MAP[i18n.language as SupportedLanguage] || "pt-BR";
+
   const toggleSelection = (id: string) => {
     if (selectedTariffs.includes(id)) {
       onSelectionChange(selectedTariffs.filter((s) => s !== id));
@@ -41,7 +49,7 @@ export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoa
         <CardContent className="py-12">
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-3 text-muted-foreground">Carregando tarifas...</span>
+            <span className="ml-3 text-muted-foreground">{t("tariffs.loadingTariffs")}</span>
           </div>
         </CardContent>
       </Card>
@@ -54,8 +62,8 @@ export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoa
         <CardContent className="py-12">
           <div className="text-center text-muted-foreground">
             <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">Pronto para buscar</p>
-            <p className="text-sm">Selecione os filtros e clique em Buscar para ver até 50 resultados</p>
+            <p className="text-lg font-medium">{t("tariffs.readyToSearch")}</p>
+            <p className="text-sm">{t("tariffs.selectFilters")}</p>
           </div>
         </CardContent>
       </Card>
@@ -68,8 +76,8 @@ export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoa
         <CardContent className="py-12">
           <div className="text-center text-muted-foreground">
             <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">Nenhuma tarifa encontrada</p>
-            <p className="text-sm">Ajuste os filtros ou importe dados para começar</p>
+            <p className="text-lg font-medium">{t("tariffs.noTariffs")}</p>
+            <p className="text-sm">{t("tariffs.adjustFilters")}</p>
           </div>
         </CardContent>
       </Card>
@@ -81,7 +89,7 @@ export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoa
       <CardHeader className="pb-4">
         <CardTitle className="text-lg font-heading flex items-center gap-2">
           <Package className="h-5 w-5 text-primary" />
-          Resultados ({tariffs.length} tarifas)
+          {t("tariffs.results")} ({tariffs.length} {t("tariffs.tariffs")})
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -95,7 +103,7 @@ export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoa
                     onCheckedChange={toggleAll}
                   />
                 </TableHead>
-                <TableHead className="font-semibold">Armador</TableHead>
+                <TableHead className="font-semibold">{t("tariffs.carrier")}</TableHead>
                 <TableHead className="font-semibold">POL</TableHead>
                 <TableHead className="font-semibold">POD</TableHead>
                 <TableHead className="font-semibold text-right">20'DC</TableHead>
@@ -112,7 +120,7 @@ export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoa
                 <TableHead className="font-semibold">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    Validade
+                    {t("tariffs.validity")}
                   </div>
                 </TableHead>
                 <TableHead className="font-semibold">Subject to</TableHead>
@@ -139,13 +147,13 @@ export function TariffTable({ tariffs, selectedTariffs, onSelectionChange, isLoa
                   <TableCell className="font-medium">{tariff.pol}</TableCell>
                   <TableCell className="font-medium">{tariff.pod}</TableCell>
                   <TableCell className="text-right font-mono text-sm">
-                    {formatPrice(tariff.price_20dc)}
+                    {formatPrice(tariff.price_20dc, locale)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm">
-                    {formatPrice(tariff.price_40hc)}
+                    {formatPrice(tariff.price_40hc, locale)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm">
-                    {formatPrice(tariff.price_40reefer)}
+                    {formatPrice(tariff.price_40reefer, locale)}
                   </TableCell>
                   <TableCell className="text-center">
                     {tariff.free_time || "-"}

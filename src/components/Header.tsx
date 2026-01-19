@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Anchor, Waves, LogOut, Settings, User, Eye } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useSimulation } from "@/contexts/SimulationContext";
@@ -12,8 +13,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export function Header() {
+  const { t } = useTranslation();
   const { user, isAdmin, signOut } = useAuthContext();
   const { isSimulating, startSimulation } = useSimulation();
   const { data: countries = [] } = useCountries();
@@ -28,28 +31,31 @@ export function Header() {
             </div>
             <div>
               <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
-                Tarifário Marítimo
+                {t("header.title")}
                 <Waves className="h-5 w-5 text-primary" />
               </h1>
               <p className="text-sm text-muted-foreground">
-                Consulta e comparativo de tarifas de frete
+                {t("header.subtitle")}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Language selector */}
+            <LanguageSelector />
+
             {/* Simulation dropdown - visible only to admins */}
             {isAdmin && !isSimulating && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2">
                     <Eye className="h-4 w-4" />
-                    <span className="hidden sm:inline">Simular Usuário</span>
+                    <span className="hidden sm:inline">{t("header.simulateUser")}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 max-h-[300px] overflow-y-auto">
                   <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground">
-                    Selecione um país para simular
+                    {t("header.selectCountry")}
                   </div>
                   <DropdownMenuSeparator />
                   {countries.map((country) => (
@@ -63,7 +69,7 @@ export function Header() {
                   ))}
                   {countries.length === 0 && (
                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      Nenhum país cadastrado
+                      {t("header.noCountries")}
                     </div>
                   )}
                 </DropdownMenuContent>
@@ -75,7 +81,7 @@ export function Header() {
               <Button variant="outline" asChild>
                 <Link to="/admin" className="gap-2">
                   <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline">Administração</span>
+                  <span className="hidden sm:inline">{t("header.administration")}</span>
                 </Link>
               </Button>
             )}
@@ -106,7 +112,7 @@ export function Header() {
                     <DropdownMenuItem asChild>
                       <Link to="/admin" className="cursor-pointer">
                         <Settings className="mr-2 h-4 w-4" />
-                        Administração
+                        {t("header.administration")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -118,7 +124,7 @@ export function Header() {
                   onClick={signOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sair
+                  {t("header.logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

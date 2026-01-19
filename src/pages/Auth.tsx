@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Anchor, Loader2 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -7,13 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const loginSchema = z.object({
-  email: z.string().trim().email("Email inválido").max(255, "Email muito longo"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").max(100, "Senha muito longa"),
-});
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export default function Auth() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,6 +19,11 @@ export default function Auth() {
   
   const { user, isLoading, signIn } = useAuthContext();
   const navigate = useNavigate();
+
+  const loginSchema = z.object({
+    email: z.string().trim().email(t("validation.invalidEmail")).max(255, t("validation.emailTooLong")),
+    password: z.string().min(6, t("validation.passwordMin")).max(100, t("validation.passwordTooLong")),
+  });
 
   // Redirect if already logged in
   useEffect(() => {
@@ -60,26 +63,29 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSelector />
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Anchor className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-2xl">Tarifário Marítimo</CardTitle>
+            <CardTitle className="text-2xl">{t("auth.title")}</CardTitle>
             <CardDescription className="mt-2">
-              Entre com suas credenciais para acessar o sistema
+              {t("auth.subtitle")}
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("auth.email")}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="seu@email.com"
+                placeholder={t("auth.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
@@ -91,11 +97,11 @@ export default function Auth() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">{t("auth.password")}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder={t("auth.passwordPlaceholder")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isSubmitting}
@@ -110,16 +116,16 @@ export default function Auth() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Entrando...
+                  {t("auth.loggingIn")}
                 </>
               ) : (
-                "Entrar"
+                t("auth.login")
               )}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Não tem acesso? Entre em contato com o administrador.
+            {t("auth.noAccess")}
           </p>
         </CardContent>
       </Card>
