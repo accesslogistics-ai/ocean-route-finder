@@ -7,10 +7,12 @@ import { RouteComparison } from "@/components/RouteComparison";
 import { ExportActions } from "@/components/ExportActions";
 import { useTariffs, useRouteComparison, TariffFilters as TariffFiltersType } from "@/hooks/useTariffs";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useLogSearch } from "@/hooks/useMonitoring";
 import { Search, BarChart3 } from "lucide-react";
 
 const Index = () => {
-  const { effectiveCountry } = useAuthContext();
+  const { user, effectiveCountry } = useAuthContext();
+  const { logSearch } = useLogSearch();
   const [activeTab, setActiveTab] = useState("search");
   const [carrier, setCarrier] = useState("");
   const [pol, setPol] = useState("");
@@ -37,6 +39,11 @@ const Index = () => {
     });
     setSelectedTariffs([]);
     setHasSearched(true);
+
+    // Log the search
+    if (user) {
+      logSearch(user.id, carrier || null, pol || null, pod || null);
+    }
   };
 
   const handleReset = () => {

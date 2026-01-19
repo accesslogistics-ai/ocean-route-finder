@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_logs: {
+        Row: {
+          accessed_at: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          accessed_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          accessed_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       destinations: {
         Row: {
           country: string
@@ -61,6 +85,36 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      search_logs: {
+        Row: {
+          carrier: string | null
+          id: string
+          pod: string | null
+          pol: string | null
+          results_count: number | null
+          searched_at: string
+          user_id: string
+        }
+        Insert: {
+          carrier?: string | null
+          id?: string
+          pod?: string | null
+          pol?: string | null
+          results_count?: number | null
+          searched_at?: string
+          user_id: string
+        }
+        Update: {
+          carrier?: string | null
+          id?: string
+          pod?: string | null
+          pol?: string | null
+          results_count?: number | null
+          searched_at?: string
           user_id?: string
         }
         Relationships: []
@@ -207,6 +261,18 @@ export type Database = {
         Args: { p_carrier?: string }
         Returns: {
           pol: string
+        }[]
+      }
+      get_user_activity_summary: {
+        Args: { p_month: number; p_year: number }
+        Returns: {
+          access_count: number
+          country: string
+          email: string
+          full_name: string
+          last_access: string
+          search_count: number
+          user_id: string
         }[]
       }
       get_user_role: {
