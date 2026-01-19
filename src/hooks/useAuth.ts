@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,23 @@ export function useAuth() {
     isAdmin: false,
   });
   const { toast } = useToast();
+  const accessLoggedRef = useRef<string | null>(null);
+
+  // Log access when user session is established
+  const logAccess = useCallback(async (userId: string) => {
+    // Prevent duplicate logs for the same session
+    if (accessLoggedRef.current === userId) return;
+    accessLoggedRef.current = userId;
+
+    try {
+      await supabase.from("access_logs").insert({
+        user_id: userId,
+        user_agent: navigator.userAgent,
+      });
+    } catch (error) {
+      console.error("Error logging access:", error);
+    }
+  }, []);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -39,8 +56,10 @@ export function useAuth() {
         if (session?.user) {
           setTimeout(() => {
             fetchUserRole(session.user.id);
+            logAccess(session.user.id);
           }, 0);
         } else {
+          accessLoggedRef.current = null; // Reset on logout
           setAuthState((prev) => ({
             ...prev,
             role: null,
@@ -62,6 +81,7 @@ export function useAuth() {
 
       if (session?.user) {
         fetchUserRole(session.user.id);
+        logAccess(session.user.id);
       } else {
         setAuthState((prev) => ({ ...prev, isLoading: false }));
       }

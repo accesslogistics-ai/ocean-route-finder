@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2, Upload, FileSpreadsheet, MapPin, Globe } from "lucide-react";
+import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2, Upload, FileSpreadsheet, MapPin, Globe, Activity } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -49,6 +49,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCountries } from "@/hooks/useCountries";
 import { ImportTariffs } from "@/components/ImportTariffs";
 import { ImportDestinations } from "@/components/ImportDestinations";
+import { MonitoringPanel } from "@/components/MonitoringPanel";
 
 const createUserSchema = z.object({
   email: z.string().trim().email("Email inválido").max(255, "Email muito longo"),
@@ -243,6 +244,10 @@ export default function Admin() {
             <TabsTrigger value="imports" className="gap-2">
               <Upload className="h-4 w-4" />
               Importações
+            </TabsTrigger>
+            <TabsTrigger value="monitoring" className="gap-2">
+              <Activity className="h-4 w-4" />
+              Monitoramento
             </TabsTrigger>
           </TabsList>
 
@@ -532,6 +537,11 @@ export default function Admin() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Monitoring Tab */}
+          <TabsContent value="monitoring">
+            <MonitoringPanel />
           </TabsContent>
         </Tabs>
       </main>
