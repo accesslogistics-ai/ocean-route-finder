@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
-import { Anchor, Waves, LogOut, Settings, User } from "lucide-react";
+import { Anchor, Waves, LogOut, Settings, User, Eye } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useSimulation } from "@/contexts/SimulationContext";
+import { useCountries } from "@/hooks/useCountries";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 
 export function Header() {
   const { user, isAdmin, signOut } = useAuthContext();
+  const { isSimulating, startSimulation } = useSimulation();
+  const { data: countries = [] } = useCountries();
 
   return (
     <header className="bg-card border-b">
@@ -34,6 +38,38 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Simulation dropdown - visible only to admins */}
+            {isAdmin && !isSimulating && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Eye className="h-4 w-4" />
+                    <span className="hidden sm:inline">Simular Usuário</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 max-h-[300px] overflow-y-auto">
+                  <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground">
+                    Selecione um país para simular
+                  </div>
+                  <DropdownMenuSeparator />
+                  {countries.map((country) => (
+                    <DropdownMenuItem
+                      key={country}
+                      onClick={() => startSimulation(country)}
+                      className="cursor-pointer"
+                    >
+                      {country}
+                    </DropdownMenuItem>
+                  ))}
+                  {countries.length === 0 && (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Nenhum país cadastrado
+                    </div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             {/* Admin management button - visible only to admins */}
             {isAdmin && (
               <Button variant="outline" asChild>
