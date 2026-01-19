@@ -6,6 +6,7 @@ import { Tariff } from "@/hooks/useTariffs";
 import { toast } from "sonner";
 import XLSX from "xlsx-js-style";
 import { LOCALE_MAP, type SupportedLanguage } from "@/i18n";
+import { escapeHtml } from "@/lib/security";
 
 interface ExportActionsProps {
   tariffs: Tariff[];
@@ -138,7 +139,8 @@ function generatePDFContent(tariffs: Tariff[], t: (key: string) => string, local
     <html>
     <head>
       <meta charset="utf-8">
-      <title>${t("export.quoteTitle")}</title>
+      <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+      <title>${escapeHtml(t("export.quoteTitle"))}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
         h1 { color: #0066cc; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }
@@ -152,11 +154,11 @@ function generatePDFContent(tariffs: Tariff[], t: (key: string) => string, local
       </style>
     </head>
     <body>
-      <h1>${t("export.quoteTitle")}</h1>
-      <p class="date">${t("export.date")}: ${date}</p>
+      <h1>${escapeHtml(t("export.quoteTitle"))}</h1>
+      <p class="date">${escapeHtml(t("export.date"))}: ${escapeHtml(date)}</p>
       <table>
         <tr>
-          <th>${t("tariffs.carrier")}</th>
+          <th>${escapeHtml(t("tariffs.carrier"))}</th>
           <th>POL</th>
           <th>POD</th>
           <th>20'DC</th>
@@ -164,7 +166,7 @@ function generatePDFContent(tariffs: Tariff[], t: (key: string) => string, local
           <th>40'Reefer</th>
           <th>TT</th>
           <th>FT</th>
-          <th>${t("tariffs.validity")}</th>
+          <th>${escapeHtml(t("tariffs.validity"))}</th>
         </tr>
   `;
 
@@ -176,15 +178,15 @@ function generatePDFContent(tariffs: Tariff[], t: (key: string) => string, local
 
     html += `
       <tr>
-        <td>${tariff.carrier}</td>
-        <td>${tariff.pol}</td>
-        <td>${tariff.pod}</td>
-        <td class="price">${formatPrice(tariff.price_20dc)}</td>
-        <td class="price">${formatPrice(tariff.price_40hc)}</td>
-        <td class="price">${formatPrice(tariff.price_40reefer)}</td>
-        <td>${tariff.transit_time || "-"}</td>
-        <td>${tariff.free_time || "-"}</td>
-        <td>${tariff.validity || "-"}</td>
+        <td>${escapeHtml(tariff.carrier)}</td>
+        <td>${escapeHtml(tariff.pol)}</td>
+        <td>${escapeHtml(tariff.pod)}</td>
+        <td class="price">${escapeHtml(formatPrice(tariff.price_20dc))}</td>
+        <td class="price">${escapeHtml(formatPrice(tariff.price_40hc))}</td>
+        <td class="price">${escapeHtml(formatPrice(tariff.price_40reefer))}</td>
+        <td>${escapeHtml(tariff.transit_time)}</td>
+        <td>${escapeHtml(tariff.free_time)}</td>
+        <td>${escapeHtml(tariff.validity)}</td>
       </tr>
     `;
   });
@@ -192,8 +194,8 @@ function generatePDFContent(tariffs: Tariff[], t: (key: string) => string, local
   html += `
       </table>
       <div class="footer">
-        <p>${t("export.quoteFooter")}</p>
-        <p>${t("export.quoteDisclaimer")}</p>
+        <p>${escapeHtml(t("export.quoteFooter"))}</p>
+        <p>${escapeHtml(t("export.quoteDisclaimer"))}</p>
       </div>
     </body>
     </html>
