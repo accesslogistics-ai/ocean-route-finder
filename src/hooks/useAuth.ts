@@ -9,6 +9,7 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   role: AppRole | null;
+  userCountry: string | null;
   isLoading: boolean;
   isAdmin: boolean;
 }
@@ -18,6 +19,7 @@ export function useAuth() {
     user: null,
     session: null,
     role: null,
+    userCountry: null,
     isLoading: true,
     isAdmin: false,
   });
@@ -42,6 +44,7 @@ export function useAuth() {
           setAuthState((prev) => ({
             ...prev,
             role: null,
+            userCountry: null,
             isAdmin: false,
             isLoading: false,
           }));
@@ -69,16 +72,28 @@ export function useAuth() {
 
   const fetchUserRole = async (userId: string) => {
     try {
-      const { data, error } = await supabase.rpc("get_user_role", {
+      // Fetch role
+      const { data: roleData, error: roleError } = await supabase.rpc("get_user_role", {
         _user_id: userId,
       });
 
-      if (error) throw error;
+      if (roleError) throw roleError;
 
-      const role = data as AppRole | null;
+      const role = roleData as AppRole | null;
+
+      // Fetch user's country from profile
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("country")
+        .eq("user_id", userId)
+        .single();
+
+      const userCountry = profileError ? null : profileData?.country ?? null;
+
       setAuthState((prev) => ({
         ...prev,
         role,
+        userCountry,
         isAdmin: role === "admin",
         isLoading: false,
       }));
@@ -87,6 +102,7 @@ export function useAuth() {
       setAuthState((prev) => ({
         ...prev,
         role: null,
+        userCountry: null,
         isAdmin: false,
         isLoading: false,
       }));

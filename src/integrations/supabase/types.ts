@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      destinations: {
+        Row: {
+          country: string
+          created_at: string
+          destination: string
+          id: string
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          destination: string
+          id?: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          destination?: string
+          id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           country: string | null
@@ -130,10 +151,50 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_pods_by_country: {
+        Args: { p_carrier?: string; p_country: string; p_pol?: string }
+        Returns: {
+          pod: string
+        }[]
+      }
+      get_tariffs_by_country: {
+        Args: { p_country: string }
+        Returns: {
+          carrier: string
+          commodity: string | null
+          created_at: string
+          ens_ams: string | null
+          free_time: string | null
+          free_time_destination: string | null
+          free_time_origin: string | null
+          id: string
+          pod: string
+          pol: string
+          price_20dc: number | null
+          price_40hc: number | null
+          price_40reefer: number | null
+          subject_to: string | null
+          transit_time: string | null
+          updated_at: string
+          validity: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "tariffs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_unique_carriers: {
         Args: never
         Returns: {
           carrier: string
+        }[]
+      }
+      get_unique_countries: {
+        Args: never
+        Returns: {
+          country: string
         }[]
       }
       get_unique_pods: {
