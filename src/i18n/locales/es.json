@@ -18,7 +18,8 @@
     "createdAt": "Creado el",
     "noData": "No se encontraron datos",
     "confirm": "Confirmar",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "back": "Volver"
   },
   "auth": {
     "title": "Tarifario Marítimo",

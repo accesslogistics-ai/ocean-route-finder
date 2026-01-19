@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2, Upload, FileSpreadsheet, MapPin, Globe, Activity } from "lucide-react";
+import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2, Upload, FileSpreadsheet, MapPin, Globe, Activity, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -78,6 +80,7 @@ interface UserWithRole {
 }
 
 export default function Admin() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("users");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -230,9 +233,17 @@ export default function Admin() {
       <Header />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Painel Administrativo</h1>
-          <p className="text-muted-foreground">Gerencie usuários e importe dados</p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">{t("admin.title")}</h1>
+            <p className="text-muted-foreground">{t("admin.subtitle")}</p>
+          </div>
+          <Button variant="outline" asChild className="gap-2">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4" />
+              {t("common.back") || "Voltar"}
+            </Link>
+          </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

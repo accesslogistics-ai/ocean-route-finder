@@ -18,7 +18,8 @@
     "createdAt": "Created at",
     "noData": "No data found",
     "confirm": "Confirm",
-    "close": "Close"
+    "close": "Close",
+    "back": "Back"
   },
   "auth": {
     "title": "Maritime Tariff",
