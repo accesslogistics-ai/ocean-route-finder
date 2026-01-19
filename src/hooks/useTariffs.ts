@@ -30,12 +30,43 @@ export interface TariffFilters {
 export interface UseTariffsOptions {
   enabled?: boolean;
   limit?: number;
+  userCountry?: string | null;
 }
 
 export function useTariffs(filters: TariffFilters = {}, options: UseTariffsOptions = {}) {
   return useQuery({
-    queryKey: ["tariffs", filters, options.limit ?? null],
+    queryKey: ["tariffs", filters, options.limit ?? null, options.userCountry ?? null],
     queryFn: async () => {
+      // If user has a country restriction, use the RPC function
+      if (options.userCountry) {
+        const { data, error } = await supabase.rpc("get_tariffs_by_country", {
+          p_country: options.userCountry,
+        });
+
+        if (error) throw error;
+
+        let result = data as Tariff[];
+
+        // Apply additional filters
+        if (filters.carrier) {
+          result = result.filter((t) => t.carrier === filters.carrier);
+        }
+        if (filters.pol) {
+          result = result.filter((t) => t.pol === filters.pol);
+        }
+        if (filters.pod) {
+          result = result.filter((t) => t.pod === filters.pod);
+        }
+
+        // Apply limit
+        if (options.limit && options.limit > 0) {
+          result = result.slice(0, options.limit);
+        }
+
+        return result;
+      }
+
+      // Admin or no country restriction - use direct query
       let query = supabase.from("tariffs").select("*");
 
       if (filters.carrier) {
@@ -85,10 +116,22 @@ export function usePols(carrier?: string) {
   });
 }
 
-export function usePods(carrier?: string, pol?: string) {
+export function usePods(carrier?: string, pol?: string, userCountry?: string | null) {
   return useQuery({
-    queryKey: ["pods", carrier, pol],
+    queryKey: ["pods", carrier, pol, userCountry ?? null],
     queryFn: async () => {
+      // If user has country restriction, use the country-filtered RPC
+      if (userCountry) {
+        const { data, error } = await supabase.rpc("get_pods_by_country", {
+          p_country: userCountry,
+          p_carrier: carrier || null,
+          p_pol: pol || null,
+        });
+        if (error) throw error;
+        return (data as { pod: string }[]).map((d) => d.pod);
+      }
+
+      // Admin - use normal RPC
       const { data, error } = await supabase.rpc("get_unique_pods", {
         p_carrier: carrier || null,
         p_pol: pol || null,

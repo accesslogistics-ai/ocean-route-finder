@@ -8,6 +8,7 @@ interface TariffFiltersProps {
   carrier: string;
   pol: string;
   pod: string;
+  userCountry?: string | null;
   onCarrierChange: (value: string) => void;
   onPolChange: (value: string) => void;
   onPodChange: (value: string) => void;
@@ -19,6 +20,7 @@ export function TariffFilters({
   carrier,
   pol,
   pod,
+  userCountry,
   onCarrierChange,
   onPolChange,
   onPodChange,
@@ -27,7 +29,7 @@ export function TariffFilters({
 }: TariffFiltersProps) {
   const { data: carriers = [], isLoading: loadingCarriers } = useCarriers();
   const { data: pols = [], isLoading: loadingPols } = usePols(carrier || undefined);
-  const { data: pods = [], isLoading: loadingPods } = usePods(carrier || undefined, pol || undefined);
+  const { data: pods = [], isLoading: loadingPods } = usePods(carrier || undefined, pol || undefined, userCountry);
 
   return (
     <Card className="border-none shadow-lg bg-card">

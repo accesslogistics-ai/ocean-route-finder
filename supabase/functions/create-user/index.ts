@@ -11,6 +11,7 @@ interface CreateUserRequest {
   password: string;
   fullName?: string | null;
   role: "admin" | "user";
+  country?: string | null;
 }
 
 serve(async (req: Request) => {
@@ -59,11 +60,19 @@ serve(async (req: Request) => {
     }
 
     // Parse request body
-    const { email, password, fullName, role }: CreateUserRequest = await req.json();
+    const { email, password, fullName, role, country }: CreateUserRequest = await req.json();
 
     if (!email || !password || !role) {
       return new Response(
         JSON.stringify({ error: "Email, senha e tipo são obrigatórios" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate country for regular users
+    if (role === "user" && !country) {
+      return new Response(
+        JSON.stringify({ error: "País é obrigatório para usuários" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -89,16 +98,18 @@ serve(async (req: Request) => {
       );
     }
 
-    // Create profile
+    // Create profile with country
     const { error: profileError } = await adminClient
       .from("profiles")
       .insert({
         user_id: newUser.user.id,
         email: email,
         full_name: fullName || null,
+        country: role === "user" ? country : null,
       });
 
     if (profileError) {
+      console.error("Profile creation error:", profileError);
       // Rollback: delete the user if profile creation fails
       await adminClient.auth.admin.deleteUser(newUser.user.id);
       return new Response(
@@ -116,6 +127,7 @@ serve(async (req: Request) => {
       });
 
     if (roleInsertError) {
+      console.error("Role creation error:", roleInsertError);
       // Rollback: delete profile and user
       await adminClient.from("profiles").delete().eq("user_id", newUser.user.id);
       await adminClient.auth.admin.deleteUser(newUser.user.id);
@@ -124,6 +136,8 @@ serve(async (req: Request) => {
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    console.log(`User created successfully: ${email}, role: ${role}, country: ${country || "N/A"}`);
 
     return new Response(
       JSON.stringify({ success: true, userId: newUser.user.id }),

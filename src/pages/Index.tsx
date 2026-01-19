@@ -6,9 +6,11 @@ import { TariffTable } from "@/components/TariffTable";
 import { RouteComparison } from "@/components/RouteComparison";
 import { ExportActions } from "@/components/ExportActions";
 import { useTariffs, useRouteComparison, TariffFilters as TariffFiltersType } from "@/hooks/useTariffs";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Search, BarChart3 } from "lucide-react";
 
 const Index = () => {
+  const { userCountry } = useAuthContext();
   const [activeTab, setActiveTab] = useState("search");
   const [carrier, setCarrier] = useState("");
   const [pol, setPol] = useState("");
@@ -20,6 +22,7 @@ const Index = () => {
   const { data: tariffs = [], isLoading } = useTariffs(appliedFilters, { 
     enabled: hasSearched, 
     limit: 50,
+    userCountry,
   });
   const { data: comparisonTariffs = [], isLoading: loadingComparison } = useRouteComparison(
     appliedFilters.pol || "",
@@ -66,6 +69,7 @@ const Index = () => {
           carrier={carrier}
           pol={pol}
           pod={pod}
+          userCountry={userCountry}
           onCarrierChange={handleCarrierChange}
           onPolChange={handlePolChange}
           onPodChange={setPod}

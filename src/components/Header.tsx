@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Anchor, Waves, LogOut, Settings, User } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { ImportTariffs } from "./ImportTariffs";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,13 +39,10 @@ export function Header() {
               <Button variant="outline" asChild>
                 <Link to="/admin" className="gap-2">
                   <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline">Gerenciar Usuários</span>
+                  <span className="hidden sm:inline">Administração</span>
                 </Link>
               </Button>
             )}
-            
-            {/* Only show import button for admins */}
-            {isAdmin && <ImportTariffs />}
 
             {/* User menu */}
             <DropdownMenu>
@@ -74,7 +70,7 @@ export function Header() {
                     <DropdownMenuItem asChild>
                       <Link to="/admin" className="cursor-pointer">
                         <Settings className="mr-2 h-4 w-4" />
-                        Gerenciar Usuários
+                        Administração
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
