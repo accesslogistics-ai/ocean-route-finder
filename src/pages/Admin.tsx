@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2, Upload, FileSpreadsheet, MapPin, Globe, Activity, ArrowLeft } from "lucide-react";
+import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2, Upload, FileSpreadsheet, MapPin, Globe, Activity, ArrowLeft, Pencil } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -99,6 +99,11 @@ export default function Admin() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Edit country state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
+  const [editCountry, setEditCountry] = useState("");
 
   const { data: countries = [], isLoading: loadingCountries } = useCountries();
 
@@ -203,6 +208,58 @@ export default function Admin() {
       });
     },
   });
+
+  const updateUserCountryMutation = useMutation({
+    mutationFn: async ({ userId, country }: { userId: string; country: string | null }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ country })
+        .eq("user_id", userId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "País atualizado!",
+        description: "O país do usuário foi atualizado com sucesso.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setEditDialogOpen(false);
+      setEditingUser(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar país",
+        description: error.message,
+      });
+    },
+  });
+
+  const openEditDialog = (user: UserWithRole) => {
+    setEditingUser(user);
+    setEditCountry(user.country || "");
+    setEditDialogOpen(true);
+  };
+
+  const handleEditCountrySubmit = () => {
+    if (!editingUser) return;
+    
+    // For regular users, country is required
+    if (editingUser.role === "user" && !editCountry) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "País é obrigatório para usuários",
+      });
+      return;
+    }
+
+    updateUserCountryMutation.mutate({
+      userId: editingUser.id,
+      country: editCountry || null,
+    });
+  };
 
   const resetForm = () => {
     setEmail("");
@@ -481,35 +538,45 @@ export default function Admin() {
                               {new Date(user.created_at).toLocaleDateString("pt-BR")}
                             </TableCell>
                             <TableCell>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Esta ação não pode ser desfeita. O usuário{" "}
-                                      <strong>{user.email}</strong> será removido permanentemente.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      onClick={() => deleteUserMutation.mutate(user.id)}
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openEditDialog(user)}
+                                  title="Editar país"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                     >
-                                      Excluir
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta ação não pode ser desfeita. O usuário{" "}
+                                        <strong>{user.email}</strong> será removido permanentemente.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        onClick={() => deleteUserMutation.mutate(user.id)}
+                                      >
+                                        Excluir
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -519,6 +586,86 @@ export default function Admin() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Edit Country Dialog */}
+            <Dialog open={editDialogOpen} onOpenChange={(open) => {
+              setEditDialogOpen(open);
+              if (!open) {
+                setEditingUser(null);
+                setEditCountry("");
+              }
+            }}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Editar País do Usuário</DialogTitle>
+                  <DialogDescription>
+                    {editingUser?.email}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-4">
+                  {editingUser?.role === "admin" && (
+                    <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground">
+                      <Shield className="h-4 w-4 inline mr-2" />
+                      Administradores têm acesso a todos os países. O país selecionado é apenas informativo.
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-country">
+                      País {editingUser?.role === "user" ? "*" : "(opcional)"}
+                    </Label>
+                    <Select value={editCountry} onValueChange={setEditCountry} disabled={loadingCountries}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingCountries ? "Carregando..." : "Selecione o país"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {editingUser?.role === "admin" && (
+                          <SelectItem value="">
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-4 w-4" />
+                              Todos os países
+                            </div>
+                          </SelectItem>
+                        )}
+                        {countries.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-4 w-4" />
+                              {c}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditDialogOpen(false)}
+                    disabled={updateUserCountryMutation.isPending}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleEditCountrySubmit} 
+                    disabled={updateUserCountryMutation.isPending}
+                  >
+                    {updateUserCountryMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      "Salvar"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* Imports Tab */}
