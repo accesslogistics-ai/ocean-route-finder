@@ -8,6 +8,7 @@ const corsHeaders = {
 interface RegisterRequest {
   email: string;
   password: string;
+  fullName: string;
 }
 
 Deno.serve(async (req) => {
@@ -17,13 +18,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, password } = await req.json() as RegisterRequest;
+    const { email, password, fullName } = await req.json() as RegisterRequest;
 
     // Validate input
     if (!email || !password) {
-      console.error("Missing required fields");
+      console.error("Missing required fields: email or password");
       return new Response(
         JSON.stringify({ error: "Email e senha são obrigatórios" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!fullName || fullName.trim().length === 0) {
+      console.error("Missing required field: fullName");
+      return new Response(
+        JSON.stringify({ error: "Nome completo é obrigatório" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (fullName.trim().length > 200) {
+      console.error("Full name too long");
+      return new Response(
+        JSON.stringify({ error: "Nome muito longo (máximo 200 caracteres)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -85,7 +102,7 @@ Deno.serve(async (req) => {
     if (existingUser) {
       console.log("User already exists");
       return new Response(
-        JSON.stringify({ error: "Este email já possui uma conta" }),
+        JSON.stringify({ error: "Este email já possui uma conta. Faça login ou recupere sua senha." }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -108,14 +125,16 @@ Deno.serve(async (req) => {
 
     const userId = newUser.user.id;
 
-    // Create profile
+    // Create profile with full_name from form and company/country from whitelist
     console.log("Creating profile for user:", userId);
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .insert({
         user_id: userId,
         email: email.toLowerCase(),
+        full_name: fullName.trim(),
         country: whitelistEntry.country,
+        company: whitelistEntry.company,
       });
 
     if (profileError) {
@@ -128,13 +147,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Assign role from whitelist
-    console.log("Assigning role:", whitelistEntry.role);
+    // Always assign 'user' role for self-registration (ignore whitelist role)
+    console.log("Assigning role: user");
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       .insert({
         user_id: userId,
-        role: whitelistEntry.role,
+        role: "user",
       });
 
     if (roleError) {

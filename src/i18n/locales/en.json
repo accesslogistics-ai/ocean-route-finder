@@ -31,6 +31,8 @@
     "password": "Password",
     "passwordPlaceholder": "••••••••",
     "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Your full name",
     "login": "Login",
     "loginTab": "Login",
     "registerTab": "Register",
@@ -60,7 +62,8 @@
     "changePassword": "Change Password",
     "passwordChanged": "Password changed!",
     "passwordChangedDesc": "Your password was changed successfully.",
-    "redirecting": "Redirecting..."
+    "redirecting": "Redirecting...",
+    "userAlreadyExists": "This email already has an account. Please login or reset your password."
   },
   "header": {
     "title": "Maritime Tariff",
@@ -138,6 +141,8 @@
     "addEmail": "Add Email",
     "addEmailDesc": "Add a pre-authorized email for registration. Valid for 2 months.",
     "email": "Email",
+    "company": "Company",
+    "companyPlaceholder": "Company name",
     "expiresAt": "Expires at",
     "status": "Status",
     "active": "Active",
@@ -205,7 +210,9 @@
     "passwordMin": "Password must be at least 6 characters",
     "passwordTooLong": "Password too long",
     "nameTooLong": "Name too long",
-    "countryRequired": "Country is required for users"
+    "countryRequired": "Country is required for users",
+    "fullNameRequired": "Full name is required",
+    "companyRequired": "Company is required"
   },
   "export": {
     "export": "Export",

@@ -30,10 +30,11 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string; fullName?: string }>({});
   
   // Register state
   const [registerEmail, setRegisterEmail] = useState("");
+  const [registerFullName, setRegisterFullName] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -53,6 +54,7 @@ export default function Auth() {
 
   const registerSchema = z.object({
     email: z.string().trim().email(t("validation.invalidEmail")).max(255, t("validation.emailTooLong")),
+    fullName: z.string().trim().min(1, t("validation.fullNameRequired")).max(200, t("validation.nameTooLong")),
     password: z.string().min(6, t("validation.passwordMin")).max(100, t("validation.passwordTooLong")),
     confirmPassword: z.string(),
   }).refine((data) => data.password === data.confirmPassword, {
@@ -93,14 +95,16 @@ export default function Auth() {
 
     const result = registerSchema.safeParse({ 
       email: registerEmail, 
+      fullName: registerFullName,
       password: registerPassword,
       confirmPassword 
     });
     
     if (!result.success) {
-      const fieldErrors: { email?: string; password?: string; confirmPassword?: string } = {};
+      const fieldErrors: { email?: string; password?: string; confirmPassword?: string; fullName?: string } = {};
       result.error.errors.forEach((err) => {
         if (err.path[0] === "email") fieldErrors.email = err.message;
+        if (err.path[0] === "fullName") fieldErrors.fullName = err.message;
         if (err.path[0] === "password") fieldErrors.password = err.message;
         if (err.path[0] === "confirmPassword") fieldErrors.confirmPassword = err.message;
       });
@@ -115,6 +119,7 @@ export default function Auth() {
         body: {
           email: registerEmail,
           password: registerPassword,
+          fullName: registerFullName,
         },
       });
 
@@ -135,6 +140,7 @@ export default function Auth() {
       setActiveTab("login");
       setEmail(registerEmail);
       setRegisterEmail("");
+      setRegisterFullName("");
       setRegisterPassword("");
       setConfirmPassword("");
     } catch (error: any) {
@@ -289,6 +295,22 @@ export default function Auth() {
                   />
                   {errors.email && (
                     <p className="text-sm text-destructive">{errors.email}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="register-fullname">{t("auth.fullName")}</Label>
+                  <Input
+                    id="register-fullname"
+                    type="text"
+                    placeholder={t("auth.fullNamePlaceholder")}
+                    value={registerFullName}
+                    onChange={(e) => setRegisterFullName(e.target.value)}
+                    disabled={isRegistering}
+                    autoComplete="name"
+                  />
+                  {errors.fullName && (
+                    <p className="text-sm text-destructive">{errors.fullName}</p>
                   )}
                 </div>
                 
