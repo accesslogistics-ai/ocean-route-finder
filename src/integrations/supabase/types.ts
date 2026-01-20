@@ -244,17 +244,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_whitelist_email: {
-        Args: { p_email: string }
-        Returns: {
-          country: string
-          email: string
-          expires_at: string
-          id: string
-          is_valid: boolean
-          role: Database["public"]["Enums"]["app_role"]
-        }[]
-      }
       get_pods_by_country: {
         Args: { p_carrier?: string; p_country: string; p_pol?: string }
         Returns: {
