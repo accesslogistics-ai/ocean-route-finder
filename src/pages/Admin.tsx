@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2, Upload, FileSpreadsheet, MapPin, Globe, Activity, ArrowLeft, Pencil } from "lucide-react";
+import { Users, Plus, Trash2, Shield, User as UserIcon, Loader2, Upload, FileSpreadsheet, MapPin, Globe, Activity, ArrowLeft, Pencil, Mail } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -52,6 +52,7 @@ import { useCountries } from "@/hooks/useCountries";
 import { ImportTariffs } from "@/components/ImportTariffs";
 import { ImportDestinations } from "@/components/ImportDestinations";
 import { MonitoringPanel } from "@/components/MonitoringPanel";
+import { WhitelistManager } from "@/components/WhitelistManager";
 
 const createUserSchema = z.object({
   email: z.string().trim().email("Email inválido").max(255, "Email muito longo"),
@@ -315,15 +316,19 @@ export default function Admin() {
           <TabsList className="mb-6">
             <TabsTrigger value="users" className="gap-2">
               <Users className="h-4 w-4" />
-              Usuários
+              {t("admin.users")}
+            </TabsTrigger>
+            <TabsTrigger value="whitelist" className="gap-2">
+              <Mail className="h-4 w-4" />
+              {t("admin.whitelist")}
             </TabsTrigger>
             <TabsTrigger value="imports" className="gap-2">
               <Upload className="h-4 w-4" />
-              Importações
+              {t("admin.imports")}
             </TabsTrigger>
             <TabsTrigger value="monitoring" className="gap-2">
               <Activity className="h-4 w-4" />
-              Monitoramento
+              {t("admin.monitoring")}
             </TabsTrigger>
           </TabsList>
 
@@ -666,6 +671,11 @@ export default function Admin() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </TabsContent>
+
+          {/* Whitelist Tab */}
+          <TabsContent value="whitelist">
+            <WhitelistManager />
           </TabsContent>
 
           {/* Imports Tab */}
