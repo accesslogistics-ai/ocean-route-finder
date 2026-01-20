@@ -59,6 +59,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_whitelist: {
+        Row: {
+          country: string
+          created_at: string
+          created_by: string | null
+          email: string
+          expires_at: string
+          id: string
+          notes: string | null
+          renewed_at: string | null
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          created_by?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          notes?: string | null
+          renewed_at?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          notes?: string | null
+          renewed_at?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           country: string | null
@@ -208,6 +244,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_whitelist_email: {
+        Args: { p_email: string }
+        Returns: {
+          country: string
+          email: string
+          expires_at: string
+          id: string
+          is_valid: boolean
+          role: Database["public"]["Enums"]["app_role"]
+        }[]
+      }
       get_pods_by_country: {
         Args: { p_carrier?: string; p_country: string; p_pol?: string }
         Returns: {
