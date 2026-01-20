@@ -7,8 +7,7 @@ import {
   RefreshCw, 
   Mail, 
   Globe, 
-  Shield, 
-  User as UserIcon,
+  Building2,
   Loader2,
   Calendar,
   Clock
@@ -64,6 +63,7 @@ interface WhitelistEntry {
   id: string;
   email: string;
   country: string;
+  company: string | null;
   role: "admin" | "user";
   expires_at: string;
   created_at: string;
@@ -73,8 +73,8 @@ interface WhitelistEntry {
 
 const addEmailSchema = z.object({
   email: z.string().trim().email("Email inválido").max(255, "Email muito longo"),
+  company: z.string().trim().min(1, "Empresa é obrigatória").max(200, "Nome da empresa muito longo"),
   country: z.string().min(1, "País é obrigatório"),
-  role: z.enum(["admin", "user"]),
   notes: z.string().max(500, "Notas muito longas").optional(),
 });
 
@@ -86,8 +86,8 @@ export function WhitelistManager() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
   const [country, setCountry] = useState("");
-  const [role, setRole] = useState<"admin" | "user">("user");
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -115,8 +115,9 @@ export function WhitelistManager() {
         .from("email_whitelist")
         .insert({
           email: data.email.toLowerCase(),
+          company: data.company,
           country: data.country,
-          role: data.role,
+          role: "user", // Always user for self-registration
           expires_at: expiresAt.toISOString(),
           created_by: user?.id,
           notes: data.notes || null,
@@ -205,8 +206,8 @@ export function WhitelistManager() {
 
   const resetForm = () => {
     setEmail("");
+    setCompany("");
     setCountry("");
-    setRole("user");
     setNotes("");
     setErrors({});
   };
@@ -215,7 +216,7 @@ export function WhitelistManager() {
     e.preventDefault();
     setErrors({});
 
-    const result = addEmailSchema.safeParse({ email, country, role, notes });
+    const result = addEmailSchema.safeParse({ email, company, country, notes });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       result.error.errors.forEach((err) => {
@@ -290,6 +291,21 @@ export function WhitelistManager() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="wl-company">{t("whitelist.company")} *</Label>
+                <Input
+                  id="wl-company"
+                  type="text"
+                  placeholder={t("whitelist.companyPlaceholder")}
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  disabled={addEmailMutation.isPending}
+                />
+                {errors.company && (
+                  <p className="text-sm text-destructive">{errors.company}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="wl-country">{t("common.country")} *</Label>
                 <Select value={country} onValueChange={setCountry} disabled={loadingCountries}>
                   <SelectTrigger>
@@ -309,29 +325,6 @@ export function WhitelistManager() {
                 {errors.country && (
                   <p className="text-sm text-destructive">{errors.country}</p>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="wl-role">{t("admin.userType")} *</Label>
-                <Select value={role} onValueChange={(v) => setRole(v as "admin" | "user")}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">
-                      <div className="flex items-center gap-2">
-                        <UserIcon className="h-4 w-4" />
-                        {t("admin.user")}
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="admin">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        {t("admin.administrator")}
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className="space-y-2">
@@ -392,8 +385,8 @@ export function WhitelistManager() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Email</TableHead>
+                  <TableHead>{t("whitelist.company")}</TableHead>
                   <TableHead>{t("common.country")}</TableHead>
-                  <TableHead>{t("common.type")}</TableHead>
                   <TableHead>{t("whitelist.expiresAt")}</TableHead>
                   <TableHead>{t("whitelist.status")}</TableHead>
                   <TableHead className="w-[100px]">{t("common.actions")}</TableHead>
@@ -407,18 +400,19 @@ export function WhitelistManager() {
                     <TableRow key={entry.id}>
                       <TableCell className="font-medium">{entry.email}</TableCell>
                       <TableCell>
+                        {entry.company ? (
+                          <Badge variant="outline" className="gap-1">
+                            <Building2 className="h-3 w-3" />
+                            {entry.company}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="outline" className="gap-1">
                           <Globe className="h-3 w-3" />
                           {entry.country}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={entry.role === "admin" ? "default" : "secondary"}>
-                          {entry.role === "admin" ? (
-                            <><Shield className="h-3 w-3 mr-1" /> Admin</>
-                          ) : (
-                            <><UserIcon className="h-3 w-3 mr-1" /> {t("admin.user")}</>
-                          )}
                         </Badge>
                       </TableCell>
                       <TableCell>

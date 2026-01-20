@@ -31,6 +31,8 @@
     "password": "Senha",
     "passwordPlaceholder": "••••••••",
     "confirmPassword": "Confirmar Senha",
+    "fullName": "Nome Completo",
+    "fullNamePlaceholder": "Seu nome completo",
     "login": "Entrar",
     "loginTab": "Login",
     "registerTab": "Cadastro",
@@ -60,7 +62,8 @@
     "changePassword": "Alterar Senha",
     "passwordChanged": "Senha alterada!",
     "passwordChangedDesc": "Sua senha foi alterada com sucesso.",
-    "redirecting": "Redirecionando..."
+    "redirecting": "Redirecionando...",
+    "userAlreadyExists": "Este email já possui uma conta. Faça login ou recupere sua senha."
   },
   "header": {
     "title": "Tarifário Marítimo",
@@ -138,6 +141,8 @@
     "addEmail": "Adicionar Email",
     "addEmailDesc": "Adicione um email pré-autorizado para cadastro. Validade de 2 meses.",
     "email": "Email",
+    "company": "Empresa",
+    "companyPlaceholder": "Nome da empresa",
     "expiresAt": "Expira em",
     "status": "Status",
     "active": "Ativo",
@@ -205,7 +210,9 @@
     "passwordMin": "Senha deve ter pelo menos 6 caracteres",
     "passwordTooLong": "Senha muito longa",
     "nameTooLong": "Nome muito longo",
-    "countryRequired": "País é obrigatório para usuários"
+    "countryRequired": "País é obrigatório para usuários",
+    "fullNameRequired": "Nome completo é obrigatório",
+    "companyRequired": "Empresa é obrigatória"
   },
   "export": {
     "export": "Exportar",
