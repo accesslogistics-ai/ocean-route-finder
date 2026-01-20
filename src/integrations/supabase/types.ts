@@ -61,6 +61,7 @@ export type Database = {
       }
       email_whitelist: {
         Row: {
+          company: string | null
           country: string
           created_at: string
           created_by: string | null
@@ -72,6 +73,7 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
+          company?: string | null
           country: string
           created_at?: string
           created_by?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
         }
         Update: {
+          company?: string | null
           country?: string
           created_at?: string
           created_by?: string | null
@@ -97,6 +100,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          company: string | null
           country: string | null
           created_at: string
           email: string
@@ -107,6 +111,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company?: string | null
           country?: string | null
           created_at?: string
           email: string
@@ -117,6 +122,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company?: string | null
           country?: string | null
           created_at?: string
           email?: string
